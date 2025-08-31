@@ -32,6 +32,8 @@ export default function AssistantPage() {
     tool_id: string
     fields: Record<string, any>
   } | null>(null)
+  const [showLegalSearchSuggestion, setShowLegalSearchSuggestion] = useState(false)
+  const [lastUserMessage, setLastUserMessage] = useState('')
   const [toastMessage, setToastMessage] = useState('')
   const [toastType, setToastType] = useState<'success' | 'error'>('success')
   
@@ -53,6 +55,16 @@ export default function AssistantPage() {
 
   const identifyToolFromMessage = (messageContent: string): string | null => {
     const content = messageContent.toLowerCase()
+    
+    // Check for legal keywords first
+    const legalKeywords = ['loi', 'article', 'code', 'décision', 'cassation', 'ce', 'conseil d\'état', 
+                          'légifrance', 'jurisprudence', 'tribunal', 'juridique', 'droit civil', 
+                          'droit pénal', 'droit administratif', 'recours', 'procédure']
+    
+    if (legalKeywords.some(keyword => content.includes(keyword))) {
+      // Don't return 'legal' as tool_id since it's not a form tool, just detect for suggestion
+      return null
+    }
     
     if (content.includes('amende') || content.includes('contravention') || content.includes('pv')) {
       return 'amendes'
@@ -94,6 +106,14 @@ export default function AssistantPage() {
     return null
   }
 
+  const hasLegalKeywords = (messageContent: string): boolean => {
+    const content = messageContent.toLowerCase()
+    const legalKeywords = ['loi', 'article', 'code', 'décision', 'cassation', 'ce', 'conseil d\'état', 
+                          'légifrance', 'jurisprudence', 'tribunal', 'juridique', 'droit civil', 
+                          'droit pénal', 'droit administratif', 'recours', 'procédure']
+    return legalKeywords.some(keyword => content.includes(keyword))
+  }
+
   const sendMessage = async () => {
     if (!input.trim() || loading) return
 
@@ -101,12 +121,16 @@ export default function AssistantPage() {
     const newMessages = [...messages, userMessage]
     
     setMessages(newMessages)
+    setLastUserMessage(input.trim())
     setInput('')
     setLoading(true)
 
     try {
       // Try to identify which tool might be relevant
       const tool_id = identifyToolFromMessage(input)
+      
+      // Check for legal keywords
+      const hasLegal = hasLegalKeywords(input)
       
       const response = await axios.post<ChatResponse>(`${API}/chat`, {
         tool_id,
@@ -129,6 +153,9 @@ export default function AssistantPage() {
       } else {
         setLastSuggestedFields(null)
       }
+      
+      // Show legal search suggestion if legal keywords detected
+      setShowLegalSearchSuggestion(hasLegal)
 
     } catch (error) {
       console.error('Error sending message:', error)
@@ -158,6 +185,11 @@ export default function AssistantPage() {
     
     const prefillData = encodeURIComponent(JSON.stringify(lastSuggestedFields.fields))
     router.push(`/outil/${lastSuggestedFields.tool_id}?prefill=${prefillData}`)
+  }
+
+  const goToLegalSearch = () => {
+    const question = encodeURIComponent(lastUserMessage)
+    router.push(`/recherche-juridique?q=${question}`)
   }
 
   return (
@@ -207,7 +239,7 @@ export default function AssistantPage() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Suggested action */}
+          {/* Suggested actions */}
           {lastSuggestedFields && (
             <div className="px-6 py-4 border-t border-gray-200 bg-blue-50">
               <div className="flex items-center justify-between">
@@ -219,6 +251,23 @@ export default function AssistantPage() {
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm"
                 >
                   Remplir le formulaire
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Legal search suggestion */}
+          {showLegalSearchSuggestion && (
+            <div className="px-6 py-4 border-t border-gray-200 bg-green-50">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-green-700">
+                  ⚖️ Votre question semble juridique. Rechercher des sources récentes pourrait vous aider
+                </div>
+                <Button
+                  onClick={goToLegalSearch}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm"
+                >
+                  Rechercher des sources récentes
                 </Button>
               </div>
             </div>
