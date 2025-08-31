@@ -1,11 +1,11 @@
 {
-  "amendes": "Contexte: contestation d’amende. Données: {fields}",
+  "amendes": "Contexte: contestation d'amende administrative. Génère une lettre de contestation personnalisée.\n\nDonnées du dossier:\n- Type d'amende: {type_amende}\n- Date de l'infraction: {date_infraction}\n- Lieu de l'infraction: {lieu}\n- Numéro du procès-verbal: {numero_process_verbal}\n- Plaque d'immatriculation: {plaque}\n- Motif de contestation: {motif_contestation}\n- Éléments de preuve: {elements_preuve}\n- Identité du contrevenant: {identite}\n\nToutes les données: {fields}\n\nProduis une contestation complète avec les délais légaux (45 jours), les références au Code de la route, et les démarches administratives appropriées.",
   "aides": "Contexte: aides sociales potentielles. Données: {fields}",
   "loyers": "Contexte: encadrement des loyers. Données: {fields}",
   "travail": "Contexte: droits du travail. Données: {fields}",
   "sante": "Contexte: accès aux soins. Données: {fields}",
   "caf": "Contexte: réponse à un courrier CAF. Données: {fields}",
-  "usure": "Contexte: taux d’usure bancaire. Données: {fields}",
+  "usure": "Contexte: taux d'usure bancaire. Données: {fields}",
   "energie": "Contexte: facture énergie. Données: {fields}",
   "expulsions": "Contexte: coupures/expulsions illégales. Données: {fields}",
   "css": "Contexte: éligibilité CSS. Données: {fields}",
