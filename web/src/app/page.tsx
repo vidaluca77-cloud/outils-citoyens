@@ -80,10 +80,12 @@ export default function Page() {
               style={{
                 animationDelay: `${index * 100}ms`
               }}
+              aria-label={`Accéder à l'outil ${tool.name} : ${tool.description}`}
+              title={`${tool.name} - ${tool.description}`}
             >
               <div className="p-8">
                 <div className="flex items-center mb-4">
-                  <div className="text-4xl mr-4 transform group-hover:scale-110 transition-transform duration-200">
+                  <div className="text-4xl mr-4 transform group-hover:scale-110 transition-transform duration-200" role="img" aria-label={tool.name}>
                     {tool.icon}
                   </div>
                   <div className="flex-1">
