@@ -1,8 +1,16 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Contestation d’amende",
+  "title": "Contestation d'amende",
   "type": "object",
   "properties": {
+    "modele_id": {
+      "type": "string",
+      "enum": ["", "stationnement_errone", "vitesse_radar_defaillant", "contestation_forme"]
+    },
+    "destinataire_id": {
+      "type": "string", 
+      "enum": ["", "tribunal_police", "antai", "officier_mp"]
+    },
     "type_amende": {
       "type": "string",
       "enum": [
@@ -32,6 +40,12 @@
       "type": "string",
       "description": "photos, tickets, témoins…"
     },
+    "pieces_suggerees": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "identite": {
       "type": "object",
       "properties": {
@@ -59,5 +73,49 @@
     "motif_contestation",
     "identite"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "x-options": {
+    "destinataire_options": [
+      {"id": "tribunal_police", "label": "Tribunal de Police"},
+      {"id": "antai", "label": "ANTAI (Agence Nationale de Traitement Automatisé des Infractions)"},
+      {"id": "officier_mp", "label": "Officier du Ministère Public"}
+    ],
+    "pieces_suggerees": [
+      "Copie du procès-verbal",
+      "Justificatif de propriété du véhicule",
+      "Photos du lieu d'infraction", 
+      "Témoignages écrits",
+      "Ticket de stationnement payant",
+      "Certificat médical (si applicable)"
+    ]
+  },
+  "x-modeles": [
+    {
+      "id": "stationnement_errone",
+      "label": "Stationnement payant non reconnu",
+      "template_hint": "Contester un PV de stationnement alors que le stationnement était payant",
+      "placeholders": ["heure_debut_stationnement", "heure_fin_stationnement", "numero_ticket"],
+      "destinataire_default": "tribunal_police",
+      "objet": "Contestation PV n° {numero_process_verbal} - Stationnement payant justifié",
+      "corps": "J'ai l'honneur de contester le procès-verbal n° {numero_process_verbal} dressé le {date_infraction} concernant un stationnement prétendument irrégulier.\n\nEn effet, j'avais bien acquitté les droits de stationnement de {heure_debut_stationnement} à {heure_fin_stationnement}, comme en atteste le ticket n° {numero_ticket} ci-joint.\n\nLe stationnement était donc parfaitement régulier et conforme à la réglementation en vigueur."
+    },
+    {
+      "id": "vitesse_radar_defaillant", 
+      "label": "Radar défaillant ou mal étalonné",
+      "template_hint": "Contester un excès de vitesse en invoquant une défaillance du radar",
+      "placeholders": ["vitesse_retenue", "vitesse_reelle", "conditions_circulation"],
+      "destinataire_default": "officier_mp",
+      "objet": "Contestation PV n° {numero_process_verbal} - Radar défaillant",
+      "corps": "Je conteste formellement le procès-verbal n° {numero_process_verbal} pour excès de vitesse.\n\nLa vitesse retenue de {vitesse_retenue} km/h ne correspond pas à ma vitesse réelle de {vitesse_reelle} km/h. Les conditions de circulation étaient {conditions_circulation}.\n\nJe sollicite la vérification de l'étalonnage et du bon fonctionnement de l'appareil de contrôle utilisé."
+    },
+    {
+      "id": "contestation_forme",
+      "label": "Vice de forme du procès-verbal",
+      "template_hint": "Contester un PV pour défaut de forme ou d'information",
+      "placeholders": ["vice_constate", "article_legal"],
+      "destinataire_default": "tribunal_police", 
+      "objet": "Contestation PV n° {numero_process_verbal} - Vice de forme",
+      "corps": "Je conteste le procès-verbal n° {numero_process_verbal} en raison d'un vice de forme.\n\nEn effet, {vice_constate}, ce qui constitue un manquement aux dispositions de l'article {article_legal}.\n\nCe défaut de forme rend le procès-verbal nul et de nul effet."
+    }
+  ]
 }

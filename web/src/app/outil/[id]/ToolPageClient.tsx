@@ -29,17 +29,29 @@ interface APIResponse {
 // Utility functions
 function humanizeLabel(key: string): string {
   const labelMap: { [key: string]: string } = {
+    'modele_id': 'Modèle de lettre',
+    'destinataire_id': 'Destinataire',
     'type_amende': 'Type d\'amende',
     'date_infraction': 'Date de l\'infraction',
     'numero_process_verbal': 'Numéro du procès-verbal',
     'motif_contestation': 'Motif de contestation',
     'elements_preuve': 'Éléments de preuve',
+    'pieces_suggerees': 'Pièces jointes suggérées',
     'identite': 'Identité',
     'nom': 'Nom',
     'prenom': 'Prénom',
     'adresse': 'Adresse',
     'lieu': 'Lieu',
-    'plaque': 'Plaque d\'immatriculation'
+    'plaque': 'Plaque d\'immatriculation',
+    // Dynamic placeholder labels
+    'heure_debut_stationnement': 'Heure de début de stationnement',
+    'heure_fin_stationnement': 'Heure de fin de stationnement',
+    'numero_ticket': 'Numéro du ticket de stationnement',
+    'vitesse_retenue': 'Vitesse retenue (km/h)',
+    'vitesse_reelle': 'Vitesse réelle (km/h)', 
+    'conditions_circulation': 'Conditions de circulation',
+    'vice_constate': 'Vice de forme constaté',
+    'article_legal': 'Article de loi concerné'
   }
   
   return labelMap[key] || key
@@ -96,8 +108,53 @@ function FormField({
     )
   }
   
-  // Handle enums (select dropdowns)
+  // Handle enums (select dropdowns) 
   if (fieldDef.enum) {
+    // Special handling for modele_id
+    if (fieldKey === 'modele_id') {
+      return (
+        <Field label={label} error={error} required={fieldDef.required}>
+          <Select 
+            value={value || ''} 
+            onChange={onChange}
+            options={[
+              { value: '', label: 'Saisie libre (sans modèle)' },
+              ...fieldDef.enum.filter(option => option !== '').map((option: string) => {
+                // Find model details from schema
+                const modeles = (window as any).currentSchema?.['x-modeles'] || []
+                const modele = modeles.find((m: any) => m.id === option)
+                return {
+                  value: option,
+                  label: modele ? modele.label : option.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                }
+              })
+            ]}
+          />
+        </Field>
+      )
+    }
+    
+    // Special handling for destinataire_id
+    if (fieldKey === 'destinataire_id') {
+      const options = (window as any).currentSchema?.['x-options']?.destinataire_options || []
+      return (
+        <Field label={label} error={error} required={fieldDef.required}>
+          <Select 
+            value={value || ''} 
+            onChange={onChange}
+            options={[
+              { value: '', label: 'Sélectionner...' },
+              ...options.map((option: any) => ({
+                value: option.id,
+                label: option.label
+              }))
+            ]}
+          />
+        </Field>
+      )
+    }
+    
+    // Default enum handling
     return (
       <Field label={label} error={error} required={fieldDef.required}>
         <Select 
@@ -111,6 +168,36 @@ function FormField({
             }))
           ]}
         />
+      </Field>
+    )
+  }
+  
+  // Handle arrays (checkboxes for pieces_suggerees)
+  if (fieldDef.type === 'array' && fieldKey === 'pieces_suggerees') {
+    const options = (window as any).currentSchema?.['x-options']?.pieces_suggerees || []
+    const selectedValues = Array.isArray(value) ? value : []
+    
+    return (
+      <Field label={label} error={error} required={fieldDef.required}>
+        <div className="space-y-2">
+          {options.map((option: string) => (
+            <label key={option} className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={selectedValues.includes(option)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    onChange([...selectedValues, option])
+                  } else {
+                    onChange(selectedValues.filter(v => v !== option))
+                  }
+                }}
+                className="form-checkbox"
+              />
+              <span className="text-sm text-gray-700">{option}</span>
+            </label>
+          ))}
+        </div>
       </Field>
     )
   }
@@ -175,7 +262,11 @@ export function ToolPageClient({ params }: { params: { id: string } }) {
   useEffect(() => {
     fetch(`/schemas/${id}.json`)
       .then(r => r.json())
-      .then(setSchema)
+      .then(loadedSchema => {
+        setSchema(loadedSchema)
+        // Make schema available globally for FormField components
+        ;(window as any).currentSchema = loadedSchema
+      })
       .catch(() => {
         setToastMessage('Erreur lors du chargement du schéma')
         setToastType('error')
@@ -198,6 +289,16 @@ export function ToolPageClient({ params }: { params: { id: string } }) {
       }
     }
   }, [searchParams])
+  
+  // Auto-set destinataire when model is selected
+  useEffect(() => {
+    if (values.modele_id && schema?.['x-modeles'] && !values.destinataire_id) {
+      const selectedModele = schema['x-modeles']?.find((m: any) => m.id === values.modele_id)
+      if (selectedModele?.destinataire_default) {
+        setValues(prev => ({ ...prev, destinataire_id: selectedModele.destinataire_default }))
+      }
+    }
+  }, [values.modele_id, schema, values.destinataire_id])
 
   const validateForm = () => {
     if (!schema) return false
@@ -380,6 +481,35 @@ ${lettre.signature}`
                   errors={errors}
                 />
               ))}
+              
+              {/* Dynamic placeholder fields based on selected model */}
+              {values.modele_id && (() => {
+                const modeles = schema['x-modeles'] || []
+                const selectedModele = modeles.find((m: any) => m.id === values.modele_id)
+                if (selectedModele && selectedModele.placeholders) {
+                  return (
+                    <Card title={`Informations spécifiques - ${selectedModele.label}`} icon="📋">
+                      <div className="space-y-4">
+                        <p className="text-sm text-gray-600 mb-4">{selectedModele.template_hint}</p>
+                        {selectedModele.placeholders.map((placeholder: string) => (
+                          <Field 
+                            key={placeholder} 
+                            label={humanizeLabel(placeholder)}
+                            required
+                          >
+                            <Input 
+                              value={values[placeholder] || ''} 
+                              onChange={(value) => setValues((prev: any) => ({ ...prev, [placeholder]: value }))}
+                              placeholder={`Entrer ${humanizeLabel(placeholder).toLowerCase()}`}
+                            />
+                          </Field>
+                        ))}
+                      </div>
+                    </Card>
+                  )
+                }
+                return null
+              })()}
             </div>
             
             <div className="mt-10 pt-8 border-t border-gray-200">

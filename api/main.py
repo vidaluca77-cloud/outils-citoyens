@@ -1441,6 +1441,43 @@ class GenIn(BaseModel):
     tool_id: str
     fields: dict
 
+def refine_model_response(response: Dict[str, Any], tool_id: str) -> Dict[str, Any]:
+    """Apply minimal refinement pass for administrative tone and spelling"""
+    import copy
+    
+    refined = copy.deepcopy(response)
+    
+    # Simple refinements for better administrative tone
+    if 'lettre' in refined and 'corps' in refined['lettre']:
+        corps = refined['lettre']['corps']
+        
+        # Ensure proper administrative politeness
+        if not corps.startswith(('Monsieur', 'Madame')):
+            if 'tribunal' in refined['lettre'].get('destinataire_bloc', '').lower():
+                corps = f"Monsieur l'Officier du Ministère Public,\n\n{corps}"
+            else:
+                corps = f"Madame, Monsieur,\n\n{corps}"
+        
+        # Ensure proper closing
+        if not any(closing in corps.lower() for closing in ['agréer', 'considération', 'salutations']):
+            corps += "\n\nJe vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées."
+        
+        refined['lettre']['corps'] = corps
+    
+    # Add tool-specific mentions
+    tool_mentions = {
+        'amendes': 'Cette contestation respecte les délais légaux. Envoi en LRAR recommandé.',
+        'caf': 'Ce recours respecte les procédures administratives en vigueur.',
+        'energie': 'Cette démarche suit les recommandations du médiateur de l\'énergie.'
+    }
+    
+    base_mentions = refined.get('mentions', '')
+    tool_mention = tool_mentions.get(tool_id, '')
+    if tool_mention and tool_mention not in base_mentions:
+        refined['mentions'] = f"{base_mentions} {tool_mention}".strip()
+    
+    return refined
+
 @app.get("/health")
 def health(): return {"ok": True}
 
@@ -1450,6 +1487,41 @@ def generate(in_: GenIn):
     allowed = ["amendes","aides","loyers","travail","sante","caf","usure","energie","expulsions","css","ecole","decodeur"]
     if in_.tool_id not in allowed:
         raise HTTPException(400, "tool_id inconnu")
+    
+    # Check if user wants to use a pre-filled model
+    modele_id = in_.fields.get('modele_id')
+    if modele_id:
+        try:
+            # Load schema and try to build from model
+            schema = prompting.load_schema(in_.tool_id)
+            model_response = prompting.build_from_modele(schema, in_.fields)
+            
+            if model_response:
+                # Apply minimal refine pass for administrative tone and spelling
+                refined_response = refine_model_response(model_response, in_.tool_id)
+                
+                # Render using Jinja template
+                template_str = prompting.load_template(in_.tool_id)
+                if template_str:
+                    from jinja2 import Template
+                    template = Template(template_str)
+                    
+                    # Add rendered letter to response
+                    rendered_letter = template.render(
+                        destinataire=refined_response['lettre']['destinataire_bloc'],
+                        objet=refined_response['lettre']['objet'],
+                        corps=refined_response['lettre']['corps'],
+                        pieces_jointes=refined_response['lettre']['pj'],
+                        identite=in_.fields.get('identite', {}),
+                        tool_id=in_.tool_id
+                    )
+                    refined_response['rendered_letter'] = rendered_letter
+                
+                return refined_response
+            
+        except Exception as e:
+            logger.error(f"Model-based generation failed for tool {in_.tool_id}, model {modele_id}: {e}")
+            # Fall through to normal generation
     
     # Try schema-driven generation with OpenAI, fallback to mock on any error
     if openai_client:
