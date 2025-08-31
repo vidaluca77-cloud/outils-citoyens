@@ -1,75 +1,67 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Contestation d'amende",
+  "description": "Générez simplement votre lettre de contestation d'amende",
   "type": "object",
   "properties": {
-    "modele_id": {
-      "type": "string",
-      "enum": ["", "stationnement_errone", "vitesse_radar_defaillant", "contestation_forme"]
-    },
-    "destinataire_id": {
-      "type": "string", 
-      "enum": ["", "tribunal_police", "antai", "officier_mp"]
-    },
     "type_amende": {
       "type": "string",
+      "title": "Type d'infraction",
       "enum": [
         "stationnement",
-        "vitesse",
-        "transports",
+        "vitesse", 
         "autre"
       ]
     },
     "date_infraction": {
       "type": "string",
-      "description": "JJ/MM/AAAA"
+      "title": "Date de l'infraction",
+      "description": "Format : JJ/MM/AAAA"
     },
     "lieu": {
-      "type": "string"
+      "type": "string",
+      "title": "Lieu de l'infraction",
+      "description": "Adresse complète où s'est déroulée l'infraction"
     },
     "numero_process_verbal": {
-      "type": "string"
-    },
-    "plaque": {
-      "type": "string"
+      "type": "string", 
+      "title": "Numéro du PV",
+      "description": "Numéro indiqué sur votre procès-verbal"
     },
     "motif_contestation": {
-      "type": "string"
-    },
-    "elements_preuve": {
       "type": "string",
-      "description": "photos, tickets, témoins…"
-    },
-    "pieces_suggerees": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
+      "title": "Motif de contestation",
+      "description": "Expliquez pourquoi vous contestez cette amende"
     },
     "identite": {
       "type": "object",
+      "title": "Vos informations",
       "properties": {
         "nom": {
-          "type": "string"
+          "type": "string",
+          "title": "Nom"
         },
         "prenom": {
-          "type": "string"
+          "type": "string", 
+          "title": "Prénom"
         },
         "adresse": {
-          "type": "string"
+          "type": "string",
+          "title": "Adresse complète"
         }
       },
       "required": [
         "nom",
-        "prenom",
+        "prenom", 
         "adresse"
       ]
     }
   },
   "required": [
     "type_amende",
-    "date_infraction",
+    "date_infraction", 
     "lieu",
+    "numero_process_verbal",
     "motif_contestation",
     "identite"
   ],
