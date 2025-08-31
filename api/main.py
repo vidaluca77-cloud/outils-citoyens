@@ -61,6 +61,151 @@ def load_templates():
 SYSTEM_PROMPT = load_system_prompt()
 TEMPLATES = load_templates()
 
+def integrate_css_data(response: Dict[str, Any], user_fields: dict) -> Dict[str, Any]:
+    """Integrate user data into CSS mock response for personalization"""
+    import copy
+    
+    # Deep copy to avoid modifying the original
+    personalized = copy.deepcopy(response)
+    
+    # Extract user data with fallbacks
+    revenu = user_fields.get("revenu_mensuel_net", "[Revenus mensuels]")
+    foyer = user_fields.get("foyer", "[Nombre de personnes]")
+    age = user_fields.get("age", "[Age]")
+    statut = user_fields.get("statut", "[Statut]")
+    couverture = user_fields.get("couverture_actuelle", "[Couverture actuelle]")
+    
+    # Calculate eligibility (simplified 2024 thresholds)
+    eligibility_text = "[Éligibilité à calculer]"
+    css_type = "CSS sans participation"
+    
+    if isinstance(revenu, (int, float)) and isinstance(foyer, int):
+        annual_income = float(revenu) * 12
+        # Simplified thresholds for 2024 (approximate)
+        thresholds = {1: 9203, 2: 13804, 3: 16565, 4: 19326, 5: 22087}
+        threshold = thresholds.get(int(foyer), 22087 + (int(foyer) - 5) * 2761)
+        
+        if annual_income <= threshold:
+            eligibility_text = f"ÉLIGIBLE à la CSS gratuite (revenus: {annual_income:.0f}€/an, plafond: {threshold}€)"
+            css_type = "CSS sans participation financière"
+        elif annual_income <= threshold * 1.35:  # Participation bracket
+            participation = round((annual_income - threshold) * 0.08 / 12)
+            eligibility_text = f"ÉLIGIBLE à la CSS avec participation de {participation}€/mois"
+            css_type = "CSS avec participation forfaitaire"
+        else:
+            eligibility_text = f"NON ÉLIGIBLE (revenus: {annual_income:.0f}€/an dépassent le plafond de {threshold}€)"
+            css_type = "Alternative : mutuelle privée ou d'entreprise"
+    
+    # Personalize resume
+    personalized["resume"][0] = f"Évaluer l'éligibilité CSS pour un foyer de {foyer} personne(s) avec {revenu}€/mois de revenus"
+    personalized["resume"][2] = f"Déposer la demande CSS auprès de la CPAM avec le formulaire S3715 pour {css_type}"
+    
+    # Personalize letter
+    lettre = personalized["lettre"]
+    lettre["destinataire_bloc"] = "Caisse Primaire d'Assurance Maladie\nService Complémentaire Santé Solidaire\n[Adresse CPAM de votre département]\n[Code postal] [Ville]"
+    lettre["objet"] = f"Demande de Complémentaire Santé Solidaire - Foyer {foyer} personne(s) - Revenus {revenu}€/mois"
+    
+    statut_text = ""
+    if statut in ["chomeur", "demandeur_emploi"]:
+        statut_text = " en situation de recherche d'emploi"
+    elif statut == "retraite":
+        statut_text = " retraité(e)"
+    elif statut == "etudiant":
+        statut_text = " étudiant(e)"
+    
+    lettre["corps"] = f"""Madame, Monsieur,
+
+J'ai l'honneur de solliciter l'attribution de la Complémentaire Santé Solidaire pour mon foyer composé de {foyer} personne(s){statut_text}, avec des revenus mensuels nets de {revenu}€.
+
+Situation actuelle : {couverture if couverture != "aucune" else "aucune couverture complémentaire santé"}.
+
+{eligibility_text}
+
+Veuillez trouver ci-joint l'ensemble des pièces justificatives requises par la réglementation en vigueur.
+
+Dans l'attente de votre réponse dans un délai de 2 mois, je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations respectueuses."""
+    
+    # Personalize pieces jointes based on status
+    pj_list = ["Formulaire S3715 dûment complété et signé", "Justificatifs de revenus des 3 derniers mois complets"]
+    
+    if statut in ["chomeur", "demandeur_emploi"]:
+        pj_list.append("Attestation de situation Pôle emploi actualisée")
+    elif statut == "retraite":
+        pj_list.append("Notification de pension de retraite")
+    elif statut == "etudiant":
+        pj_list.append("Certificat de scolarité en cours de validité")
+    
+    pj_list.extend(["Justificatif de domicile de moins de 3 mois", "Copie recto-verso de la pièce d'identité"])
+    lettre["pj"] = pj_list
+    
+    # Personalize checklist
+    if isinstance(revenu, (int, float)) and isinstance(foyer, int):
+        annual = float(revenu) * 12
+        personalized["checklist"][0] = f"Vérifier l'éligibilité : {revenu}€ × 12 = {annual:.0f}€/an pour {foyer} personne(s)"
+    
+    return personalized
+
+def integrate_loyers_data(response: Dict[str, Any], user_fields: dict) -> Dict[str, Any]:
+    """Integrate user data into loyers mock response for personalization"""
+    import copy
+    
+    # Deep copy to avoid modifying the original
+    personalized = copy.deepcopy(response)
+    
+    # Extract user data with fallbacks
+    loyer = user_fields.get("loyer_actuel", "[Montant du loyer]")
+    surface = user_fields.get("surface", "[Surface]")
+    ville = user_fields.get("ville", "[Ville]")
+    adresse = user_fields.get("adresse", "[Adresse du logement]")
+    type_logement = user_fields.get("type", "logement")
+    
+    # Calculate potential excess (simplified estimate for demonstration)
+    excess_text = "[Calcul du dépassement]"
+    if isinstance(loyer, (int, float, str)) and isinstance(surface, (int, float, str)):
+        try:
+            loyer_val = float(loyer)
+            surface_val = float(surface)
+            prix_m2 = loyer_val / surface_val
+            if prix_m2 > 25:  # Simplified threshold for Paris
+                excess = loyer_val - (25 * surface_val)
+                excess_text = f"Dépassement estimé de {excess:.0f}€/mois ({prix_m2:.2f}€/m² vs référence ~25€/m²)"
+        except:
+            pass
+    
+    # Personalize resume
+    personalized["resume"][0] = f"Vérifier l'encadrement des loyers applicable à {ville} pour un {type_logement} de {surface}m²"
+    personalized["resume"][1] = f"Calculer le dépassement du loyer de référence pour le logement sis {adresse} (loyer actuel: {loyer}€)"
+    
+    # Personalize letter
+    lettre = personalized["lettre"]
+    lettre["objet"] = f"Contestation du montant du loyer - Logement sis {adresse}, {ville}"
+    
+    lettre["corps"] = f"""Monsieur/Madame le Bailleur,
+
+J'ai l'honneur de porter à votre connaissance ma contestation formelle concernant le montant du loyer pratiqué pour le logement que j'occupe sis {adresse}, {ville}.
+
+Après vérification auprès des services compétents, il apparaît que le loyer mensuel de {loyer}€ pour un {type_logement} de {surface}m² dépasse manifestement les plafonds légaux en vigueur dans cette zone.
+
+{excess_text}
+
+Conformément aux dispositions de la loi ELAN et du décret d'application relatif à l'encadrement des loyers, je vous demande de bien vouloir procéder à la régularisation de cette situation en ramenant le loyer au montant légalement autorisé.
+
+Je vous prie d'agréer, Monsieur/Madame le Bailleur, l'expression de ma considération distinguée."""
+    
+    # Update pieces jointes
+    lettre["pj"] = [
+        f"Bail de location du logement sis {adresse}",
+        "Quittances de loyer des 12 derniers mois",
+        f"Données de référence des loyers à {ville}",
+        "Justificatif d'identité en cours de validité"
+    ]
+    
+    # Personalize checklist
+    personalized["checklist"][0] = f"Consulter les loyers de référence en mairie de {ville} ou sur le site officiel"
+    personalized["checklist"][1] = f"Calculer précisément le dépassement pour un {type_logement} de {surface}m² à {loyer}€/mois"
+    
+    return personalized
+
 def integrate_amendes_data(response: Dict[str, Any], user_fields: dict) -> Dict[str, Any]:
     """Integrate user data into amendes mock response for personalization"""
     import copy
@@ -188,26 +333,59 @@ def get_mock_response(tool_id: str, user_fields: dict = None) -> Dict[str, Any]:
         },
         "loyers": {
             "resume": [
-                "Vérifier l'encadrement des loyers dans la zone",
-                "Calculer l'éventuel dépassement du loyer de référence",
-                "Adresser une mise en demeure au bailleur",
-                "Saisir la commission de conciliation si échec",
-                "Engager une action devant le tribunal si nécessaire"
+                "Analyser l'applicabilité de l'encadrement des loyers dans la zone géographique concernée",
+                "Consulter les données officielles de loyers de référence auprès des services municipaux compétents",
+                "Calculer méthodiquement l'éventuel dépassement par rapport au loyer de référence légal",
+                "Constituer un dossier documentaire exhaustif avec toutes les pièces justificatives",
+                "Adresser une mise en demeure formelle au bailleur en lettre recommandée avec AR",
+                "Saisir la commission départementale de conciliation en cas d'échec de la négociation amiable",
+                "Engager une action devant le tribunal judiciaire si la situation n'est pas régularisée"
             ],
             "lettre": {
-                "destinataire_bloc": "Monsieur/Madame [Nom du bailleur]\n[Adresse du bailleur]",
-                "objet": "Contestation du montant du loyer - Logement",
-                "corps": "Monsieur/Madame,\n\nJe vous informe que le loyer pratiqué semble dépasser les plafonds légaux.\n\n[Détail du calcul et de la contestation]\n\nJe vous demande de bien vouloir régulariser cette situation.",
-                "pj": ["Bail de location", "Quittances de loyer", "Données loyers de référence"],
-                "signature": "[Nom Prénom]\n[Adresse]\nLe [Date]"
+                "destinataire_bloc": "Monsieur/Madame [Nom du bailleur]\n[Qualité : Propriétaire bailleur]\n[Adresse complète du bailleur]\n[Code postal] [Ville]",
+                "objet": "Contestation formelle du montant du loyer - Logement sis [Adresse] - Encadrement des loyers",
+                "corps": "Monsieur/Madame le Bailleur,\n\nJ'ai l'honneur de porter à votre connaissance ma contestation formelle concernant le montant du loyer pratiqué pour le logement que j'occupe.\n\nAprès vérification auprès des services compétents, il apparaît que le loyer mensuel dépasse manifestement les plafonds légaux en vigueur.\n\n[Exposé détaillé du calcul et du dépassement constaté]\n\nConformément aux dispositions légales en vigueur, je vous demande de procéder à la régularisation de cette situation.\n\nJe vous prie d'agréer, Monsieur/Madame le Bailleur, l'expression de ma considération distinguée.",
+                "pj": ["Bail de location original", "Quittances de loyer des 12 derniers mois", "Données officielles des loyers de référence", "Justificatif d'identité en cours de validité"],
+                "signature": "[Prénom NOM]\nLocataire\n[Adresse complète]\nTéléphone : [Numéro]\nFait à [Ville], le [Date]"
             },
             "checklist": [
-                "Consulter les loyers de référence en mairie",
-                "Calculer précisément le dépassement",
-                "Envoyer en LRAR la contestation",
-                "Conserver tous les justificatifs"
+                "Vérifier l'applicabilité de l'encadrement des loyers dans votre commune et arrondissement",
+                "Consulter les données officielles des loyers de référence sur le site de la préfecture",
+                "Calculer précisément le dépassement en fonction de la surface et des caractéristiques du logement",
+                "Rassembler toutes les pièces justificatives nécessaires à la constitution du dossier",
+                "Envoyer la mise en demeure en lettre recommandée avec accusé de réception",
+                "Respecter les délais de prescription triennale pour les actions en récupération de loyers",
+                "Conserver précieusement tous les documents et accusés de réception"
             ],
-            "mentions": "Aide automatisée – ne remplace pas un conseil d'avocat. Vérifier l'applicabilité de l'encadrement dans votre commune."
+            "mentions": "Aide juridique automatisée – ne se substitue pas aux conseils d'un avocat spécialisé en droit immobilier. Vérifier impérativement l'applicabilité de l'encadrement des loyers dans votre commune. Possibilité de recours devant la commission de conciliation puis devant le tribunal judiciaire. Délai de prescription : 3 ans pour les actions en restitution de loyers indûment perçus."
+        },
+        "css": {
+            "resume": [
+                "Évaluer précisément l'éligibilité selon les plafonds de ressources CSS en vigueur",
+                "Rassembler méthodiquement tous les justificatifs de ressources et de composition familiale",
+                "Compléter rigoureusement le formulaire S3715 de demande de CSS",
+                "Déposer le dossier complet auprès de la CPAM dans les délais réglementaires",
+                "Assurer le suivi du traitement dans un délai maximal de 2 mois",
+                "Activer la prise en charge dès notification d'acceptation pour optimiser les remboursements",
+                "Programmer le renouvellement annuel avant échéance pour éviter toute interruption de droits"
+            ],
+            "lettre": {
+                "destinataire_bloc": "Caisse Primaire d'Assurance Maladie\nService Complémentaire Santé Solidaire\n[Adresse CPAM de votre département]\n[Code postal] [Ville]",
+                "objet": "Demande de Complémentaire Santé Solidaire - Art. L861-1 CSS",
+                "corps": "Madame, Monsieur,\n\nJ'ai l'honneur de solliciter l'attribution de la Complémentaire Santé Solidaire pour mon foyer.\n\nSelon l'analyse de ma situation, mes ressources devraient me permettre de bénéficier de cette aide.\n\n[Détails de la situation et éligibilité]\n\nVeuillez trouver ci-joint l'ensemble des pièces justificatives requises.\n\nJe vous prie d'agréer mes salutations respectueuses.",
+                "pj": ["Formulaire S3715 complété", "Justificatifs de revenus", "Justificatif de domicile", "Pièce d'identité"],
+                "signature": "[Prénom NOM]\n[Adresse complète]\nN° Sécurité Sociale : [Numéro]\nLe [Date]"
+            },
+            "checklist": [
+                "Vérifier l'éligibilité selon les plafonds de ressources annuels actualisés",
+                "Télécharger le formulaire S3715 sur ameli.fr ou le retirer en agence CPAM",
+                "Rassembler les justificatifs de revenus des 3 derniers mois complets",
+                "Joindre les documents de composition familiale et de situation",
+                "Déposer le dossier dans les 2 mois suivant un changement de situation",
+                "Conserver une copie complète du dossier et l'accusé de réception",
+                "Prévoir le renouvellement avant l'échéance annuelle"
+            ],
+            "mentions": "Aide automatisée – calculs indicatifs basés sur les plafonds en vigueur. Vérifier les montants exacts sur ameli.fr. Possibilité de recours auprès de la Commission de Recours Amiable en cas de refus. Alternative : dispositifs d'aide des collectivités locales ou mutuelles solidaires."
         }
     }
     
@@ -215,9 +393,13 @@ def get_mock_response(tool_id: str, user_fields: dict = None) -> Dict[str, Any]:
     if tool_id in mock_responses:
         response = mock_responses[tool_id].copy()
         
-        # Integrate user data for amendes tool specifically
+        # Integrate user data for specific tools
         if tool_id == "amendes" and user_fields:
             response = integrate_amendes_data(response, user_fields)
+        elif tool_id == "loyers" and user_fields:
+            response = integrate_loyers_data(response, user_fields)
+        elif tool_id == "css" and user_fields:
+            response = integrate_css_data(response, user_fields)
         
         return response
     
