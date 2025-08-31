@@ -1189,6 +1189,11 @@ def get_mock_response(tool_id: str, user_fields: dict = None) -> Dict[str, Any]:
         # Apply quality enhancement to all responses
         response = enhance_response_quality(response, user_fields, tool_id)
         
+        # Note: Template rendering disabled for mock responses to maintain 
+        # structured letter format expected by frontend
+        # The frontend expects: { lettre: { destinataire_bloc, objet, corps, pj, signature } }
+        # not a single template string
+        """
         # Also render letter template for mock responses to maintain consistency
         try:
             prompt_data = prompting.build_prompt(tool_id, user_fields or {})
@@ -1220,6 +1225,7 @@ def get_mock_response(tool_id: str, user_fields: dict = None) -> Dict[str, Any]:
         except Exception as e:
             logger.warning(f"Template rendering failed in mock response: {e}")
             # Keep the original dict format as fallback
+        """
         
         return response
     
@@ -1461,12 +1467,10 @@ Réponds avec le JSON amélioré, identique en structure mais optimisé en quali
         # Final validation
         final_response = validate_and_fix_response(pass2_response, tool_id)
         
-        # Render letter using Jinja template
-        template_str = prompt_data['template']
-        rendered_letter = render_letter_with_template(template_str, final_response, payload, tool_id)
-        
-        # Replace the generated letter with the rendered template
-        final_response['lettre'] = rendered_letter
+        # Note: Keeping structured letter object instead of template rendering
+        # to maintain compatibility with frontend expectations
+        # The frontend expects: { lettre: { destinataire_bloc, objet, corps, pj, signature } }
+        # not a single template string
         
         logger.info(f"Schema-driven generation completed for tool: {tool_id}")
         return final_response
