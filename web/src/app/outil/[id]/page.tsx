@@ -4,6 +4,10 @@ import axios from 'axios'
 import Ajv from 'ajv'
 import Link from 'next/link'
 import Head from 'next/head'
+import { Button } from '../../../components/ui/Button'
+import { Card } from '../../../components/ui/Card'
+import { Field, Input, Textarea, Select } from '../../../components/ui/Field'
+import { Toast as ToastComponent } from '../../../components/ui/Toast'
 
 // Type definitions
 interface APIResponse {
@@ -71,14 +75,12 @@ function FormField({
 
   if (fieldDef.type === 'object') {
     return (
-      <fieldset className="fieldset-modern">
-        <legend className="text-lg font-bold text-gray-800 px-3 bg-white">
-          <div className="flex items-center">
-            <span className="mr-2">👤</span>
-            {label}
-          </div>
-        </legend>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+      <Card className="border-2 border-gray-200">
+        <div className="flex items-center mb-4">
+          <span className="text-2xl mr-3">👤</span>
+          <h3 className="text-lg font-bold text-gray-800">{label}</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {Object.entries(fieldDef.properties || {}).map(([subKey, subDef]: any) => (
             <FormField
               key={subKey}
@@ -91,148 +93,116 @@ function FormField({
             />
           ))}
         </div>
-      </fieldset>
+      </Card>
     )
   }
 
-  let inputElement
-  const baseClasses = `form-field ${error ? 'form-field-error' : ''}`
-
   if (fieldDef.enum) {
-    inputElement = (
-      <select 
-        id={fullKey}
-        value={value || ''} 
-        onChange={e => onChange(e.target.value)}
-        className={baseClasses}
-        aria-invalid={error ? 'true' : 'false'}
-        aria-describedby={error ? `${fullKey}-error` : undefined}
-      >
-        <option value="">Choisir une option...</option>
-        {fieldDef.enum.map((option: string) => (
-          <option key={option} value={option}>{option}</option>
-        ))}
-      </select>
+    return (
+      <Field label={label} error={error} required={isRequired}>
+        <Select
+          value={value || ''}
+          onChange={e => onChange(e.target.value)}
+          error={!!error}
+          aria-invalid={error ? 'true' : 'false'}
+          aria-describedby={error ? `${fullKey}-error` : undefined}
+          options={[]}
+        >
+          <option value="">Choisir une option...</option>
+          {fieldDef.enum.map((option: string) => (
+            <option key={option} value={option}>{option}</option>
+          ))}
+        </Select>
+      </Field>
     )
-  } else if (fieldDef.type === 'boolean') {
-    inputElement = (
-      <label className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl border-2 border-gray-200 hover:border-blue-300 transition-colors cursor-pointer">
-        <input
-          id={fullKey}
-          type="checkbox"
-          checked={value || false}
-          onChange={e => onChange(e.target.checked)}
-          className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+  }
+
+  if (fieldDef.type === 'boolean') {
+    return (
+      <Field label={label} error={error} required={isRequired}>
+        <label className="flex items-center space-x-3 p-4 bg-gray-50 rounded-2xl border-2 border-gray-200 hover:border-blue-300 transition-colors cursor-pointer">
+          <input
+            type="checkbox"
+            checked={value || false}
+            onChange={e => onChange(e.target.checked)}
+            className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+            aria-invalid={error ? 'true' : 'false'}
+            aria-describedby={error ? `${fullKey}-error` : undefined}
+          />
+          <span className="text-gray-700 font-medium">Oui</span>
+        </label>
+      </Field>
+    )
+  }
+
+  if (fieldDef.type === 'number' || fieldDef.type === 'integer') {
+    return (
+      <Field label={label} error={error} required={isRequired}>
+        <Input
+          type="number"
+          value={value || ''}
+          onChange={e => onChange(fieldDef.type === 'integer' ? parseInt(e.target.value) || '' : parseFloat(e.target.value) || '')}
+          placeholder={fieldDef.description || ''}
+          step={fieldDef.type === 'integer' ? '1' : 'any'}
+          error={!!error}
           aria-invalid={error ? 'true' : 'false'}
           aria-describedby={error ? `${fullKey}-error` : undefined}
         />
-        <span className="text-gray-700 font-medium">Oui</span>
-      </label>
+      </Field>
     )
-  } else if (fieldDef.type === 'number' || fieldDef.type === 'integer') {
-    inputElement = (
-      <input
-        id={fullKey}
-        type="number"
-        value={value || ''}
-        onChange={e => onChange(fieldDef.type === 'integer' ? parseInt(e.target.value) || '' : parseFloat(e.target.value) || '')}
-        placeholder={fieldDef.description || ''}
-        className={baseClasses}
-        step={fieldDef.type === 'integer' ? '1' : 'any'}
-        aria-invalid={error ? 'true' : 'false'}
-        aria-describedby={error ? `${fullKey}-error` : undefined}
-      />
+  }
+
+  if (isDateField(fieldKey)) {
+    return (
+      <Field label={label} error={error} required={isRequired}>
+        <Input
+          type="date"
+          value={value || ''}
+          onChange={e => onChange(e.target.value)}
+          error={!!error}
+          aria-invalid={error ? 'true' : 'false'}
+          aria-describedby={error ? `${fullKey}-error` : undefined}
+        />
+      </Field>
     )
-  } else if (isDateField(fieldKey)) {
-    inputElement = (
-      <input
-        id={fullKey}
-        type="date"
-        value={value || ''}
-        onChange={e => onChange(e.target.value)}
-        className={baseClasses}
-        aria-invalid={error ? 'true' : 'false'}
-        aria-describedby={error ? `${fullKey}-error` : undefined}
-      />
+  }
+
+  if (isLongStringField(fieldDef)) {
+    return (
+      <Field label={label} error={error} required={isRequired}>
+        <Textarea
+          value={value || ''}
+          onChange={e => onChange(e.target.value)}
+          placeholder={fieldDef.description || ''}
+          error={!!error}
+          aria-invalid={error ? 'true' : 'false'}
+          aria-describedby={error ? `${fullKey}-error` : undefined}
+        />
+      </Field>
     )
-  } else if (isLongStringField(fieldDef)) {
-    inputElement = (
-      <textarea
-        id={fullKey}
-        value={value || ''}
-        onChange={e => onChange(e.target.value)}
-        placeholder={fieldDef.description || ''}
-        rows={4}
-        className={`${baseClasses} resize-none`}
-        aria-invalid={error ? 'true' : 'false'}
-        aria-describedby={error ? `${fullKey}-error` : undefined}
-      />
-    )
-  } else {
-    inputElement = (
-      <input
-        id={fullKey}
+  }
+
+  return (
+    <Field label={label} error={error} required={isRequired}>
+      <Input
         type="text"
         value={value || ''}
         onChange={e => onChange(e.target.value)}
         placeholder={fieldDef.description || ''}
-        className={baseClasses}
+        error={!!error}
         aria-invalid={error ? 'true' : 'false'}
         aria-describedby={error ? `${fullKey}-error` : undefined}
       />
-    )
-  }
-
-  return (
-    <div className="space-y-2">
-      <label htmlFor={fullKey} className="form-label">
-        {label}
-        {isRequired && <span className="text-red-500 ml-1">*</span>}
-      </label>
-      {inputElement}
-      {error && (
-        <div id={`${fullKey}-error`} className="flex items-center text-red-600 text-sm">
-          <span className="mr-1">⚠️</span>
-          {error}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// Toast component for notifications
-function Toast({ message, onClose, type = 'error' }: { message: string; onClose: () => void; type?: 'error' | 'success' }) {
-  useEffect(() => {
-    const timer = setTimeout(onClose, 5000)
-    return () => clearTimeout(timer)
-  }, [onClose])
-
-  const bgColor = type === 'error' ? 'bg-red-500' : 'bg-green-500'
-  const icon = type === 'error' ? '❌' : '✅'
-
-  return (
-    <div className={`fixed top-4 right-4 ${bgColor} text-white px-6 py-4 rounded-xl shadow-lg z-50 max-w-md`}>
-      <div className="flex items-center space-x-3">
-        <span className="text-lg">{icon}</span>
-        <span className="font-medium">{message}</span>
-        <button onClick={onClose} className="text-white hover:text-gray-200 ml-2 text-xl">
-          ×
-        </button>
-      </div>
-    </div>
+    </Field>
   )
 }
 
 // Response panel component
 function ResponsePanel({ title, children, icon }: { title: string; children: React.ReactNode; icon?: string }) {
   return (
-    <section className="bg-white border border-gray-200 shadow-sm rounded-xl p-5 space-y-3">
-      <div className="flex items-center mb-4">
-        {icon && <span className="text-2xl mr-3">{icon}</span>}
-        <h2 className="text-xl font-bold text-gray-800">{title}</h2>
-      </div>
+    <Card title={title} icon={icon}>
       {children}
-    </section>
+    </Card>
   )
 }
 
@@ -429,7 +399,7 @@ ${lettre.signature}`
         <div className="content-container">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <Link href="/" className="btn-secondary flex items-center">
+          <Link href="/" className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-xl font-medium transition-all duration-200 hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
             <span className="mr-2">←</span>
             Retour aux outils
           </Link>
@@ -448,8 +418,8 @@ ${lettre.signature}`
           </p>
         </div>
         
-        <form onSubmit={handleSubmit} className="card-modern mb-12">
-          <div className="p-8">
+        <Card className="mb-12">
+          <form onSubmit={handleSubmit}>
             <h2 className="text-2xl font-bold text-gray-800 mb-8 flex items-center">
               <span className="mr-3">📝</span>
               Informations requises
@@ -469,14 +439,11 @@ ${lettre.signature}`
             </div>
             
             <div className="mt-10 pt-8 border-t border-gray-200">
-              <button
+              <Button
                 type="submit"
                 disabled={loading}
-                className={`w-full py-4 px-8 rounded-2xl font-bold text-lg transition-all duration-300 ${
-                  loading
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'btn-primary hover:shadow-2xl'
-                }`}
+                size="lg"
+                className="w-full"
               >
                 {loading ? (
                   <div className="flex items-center justify-center space-x-3">
@@ -489,29 +456,31 @@ ${lettre.signature}`
                     <span>Générer mon document</span>
                   </div>
                 )}
-              </button>
+              </Button>
             </div>
-          </div>
-        </form>
+          </form>
+        </Card>
 
         {resp && (
           <>
             {/* Action buttons */}
             <div className="flex flex-col sm:flex-row gap-4 mb-8">
-              <button
+              <Button
+                variant="secondary"
                 onClick={() => copyToClipboard(generateAllText(resp))}
-                className="btn-secondary flex items-center justify-center space-x-2 flex-1"
+                className="flex items-center justify-center space-x-2 flex-1"
               >
                 <span>📋</span>
                 <span>Copier tout</span>
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="primary"
                 onClick={() => downloadAsText(generateAllText(resp), `document-${id}.txt`)}
-                className="btn-primary flex items-center justify-center space-x-2 flex-1"
+                className="flex items-center justify-center space-x-2 flex-1"
               >
                 <span>💾</span>
                 <span>Télécharger .txt</span>
-              </button>
+              </Button>
             </div>
             
             <div className="space-y-8">
@@ -575,7 +544,7 @@ ${lettre.signature}`
         )}
 
         {toastMessage && (
-          <Toast 
+          <ToastComponent 
             message={toastMessage} 
             type={toastType}
             onClose={() => setToastMessage('')} 
