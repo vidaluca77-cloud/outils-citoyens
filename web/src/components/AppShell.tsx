@@ -3,6 +3,7 @@ import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '../lib/utils'
+import { Home, Wrench, MessageCircle } from 'lucide-react'
 
 interface AppShellProps {
   children: React.ReactNode
@@ -18,39 +19,47 @@ export function AppShell({ children, title }: AppShellProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <h1 className="text-lg font-bold text-gray-900 truncate">
-            {title || 'Outils Citoyens'}
-          </h1>
+      <header className="bg-card border-b border-border px-4 py-3 sticky top-0 z-40">
+        <div className="container flex items-center justify-between">
+          <Link href="/" className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <span className="text-primary-foreground font-bold text-sm">OC</span>
+            </div>
+            <div>
+              <h1 className="font-bold text-lg text-foreground">
+                {title || 'Outils Citoyens'}
+              </h1>
+              <p className="text-xs text-muted-foreground hidden sm:block">Générateur de lettres administratives</p>
+            </div>
+          </Link>
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-500">🇫🇷</span>
+            <span className="text-sm text-muted-foreground">🇫🇷</span>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="flex-1 pb-20 lg:pb-6">
-        <div className="max-w-7xl mx-auto lg:max-w-4xl lg:px-6">
+        <div className="container">
           {children}
         </div>
       </main>
 
       {/* Bottom Navigation - Mobile Only */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 z-30 mobile-nav">
+      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border px-4 py-2 z-30 mobile-nav">
         <div className="flex items-center justify-around">
           <Link 
             href="/"
             className={cn(
               'flex flex-col items-center space-y-1 px-3 py-2 rounded-xl transition-all duration-200',
               isActive('/') 
-                ? 'bg-blue-50 text-blue-600' 
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                ? 'bg-primary/10 text-primary' 
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
             )}
           >
-            <span className="text-xl">🏠</span>
+            <Home className="w-5 h-5" />
             <span className="text-xs font-medium">Accueil</span>
           </Link>
 
@@ -58,27 +67,27 @@ export function AppShell({ children, title }: AppShellProps) {
             href="/outil"
             className={cn(
               'flex flex-col items-center space-y-1 px-3 py-2 rounded-xl transition-all duration-200',
-              isActive('/outil') 
-                ? 'bg-blue-50 text-blue-600' 
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              isActive('/outil') && !pathname.includes('/outil/') 
+                ? 'bg-primary/10 text-primary' 
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
             )}
           >
-            <span className="text-xl">🛠️</span>
+            <Wrench className="w-5 h-5" />
             <span className="text-xs font-medium">Outils</span>
           </Link>
 
-          <button 
+          <Link
+            href="/assistant"
             className={cn(
               'flex flex-col items-center space-y-1 px-3 py-2 rounded-xl transition-all duration-200',
-              pathname.includes('/outil/') && !pathname.endsWith('/outil')
-                ? 'bg-green-50 text-green-600' 
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              isActive('/assistant')
+                ? 'bg-primary/10 text-primary' 
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
             )}
-            disabled={!pathname.includes('/outil/') || pathname.endsWith('/outil')}
           >
-            <span className="text-xl">⚡</span>
-            <span className="text-xs font-medium">Générer</span>
-          </button>
+            <MessageCircle className="w-5 h-5" />
+            <span className="text-xs font-medium">Assistant</span>
+          </Link>
         </div>
       </nav>
     </div>
