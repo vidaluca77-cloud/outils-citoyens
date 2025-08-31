@@ -86,11 +86,11 @@ TOOL_FIELD_MAPPINGS = {
     },
     "loyers": {
         "type_probleme": ["loyer_trop_cher", "charges_abusives", "travaux_non_faits", "autre"],
-        "loyer_actuel": "Montant du loyer actuel",
-        "surface": "Surface du logement",
+        "loyer_hc": "Montant du loyer hors charges",
+        "surface_m2": "Surface du logement en m²",
         "ville": "Ville",
         "nom": "Nom complet",
-        "adresse": "Adresse du logement"
+        "adresse_complete": "Adresse complète du logement"
     },
     "travail": {
         "type_probleme": ["licenciement", "harcelement", "salaire", "conditions", "autre"],

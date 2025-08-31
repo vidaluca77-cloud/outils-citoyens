@@ -231,10 +231,10 @@ def integrate_loyers_data(response: Dict[str, Any], user_fields: dict) -> Dict[s
     personalized = copy.deepcopy(response)
     
     # Extract user data with fallbacks
-    loyer = user_fields.get("loyer_actuel", "[Montant du loyer]")
-    surface = user_fields.get("surface", "[Surface]")
+    loyer = user_fields.get("loyer_hc", "[Montant du loyer]")
+    surface = user_fields.get("surface_m2", "[Surface]")
     ville = user_fields.get("ville", "[Ville]")
-    adresse = user_fields.get("adresse", "[Adresse du logement]")
+    adresse = user_fields.get("adresse_complete", "[Adresse du logement]")
     type_logement = user_fields.get("type", "logement")
     
     # Calculate potential excess (simplified estimate for demonstration)
