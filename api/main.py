@@ -1490,11 +1490,15 @@ def generate(in_: GenIn):
     
     # Check if user wants to use a pre-filled model
     modele_id = in_.fields.get('modele_id')
+    logger.info(f"Checking for modele_id: {modele_id}")
     if modele_id:
         try:
+            logger.info(f"Loading schema for tool: {in_.tool_id}")
             # Load schema and try to build from model
             schema = prompting.load_schema(in_.tool_id)
+            logger.info(f"Schema loaded, building from model: {modele_id}")
             model_response = prompting.build_from_modele(schema, in_.fields)
+            logger.info(f"Model response: {model_response is not None}")
             
             if model_response:
                 # Apply minimal refine pass for administrative tone and spelling

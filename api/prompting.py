@@ -220,8 +220,20 @@ def build_from_modele(schema: Dict[str, Any], payload: Dict[str, Any]) -> Dict[s
         logger.warning(f"Model {modele_id} not found in schema")
         return None
     
-    # Prepare template context with all payload data
+    # Prepare template context with all payload data - flatten nested objects
     context = payload.copy()
+    
+    # Flatten identite for easier template access
+    if 'identite' in context:
+        for key, value in context['identite'].items():
+            context[f'identite_{key}'] = value
+    
+    # Add frequently used fields with fallbacks
+    context.update({
+        'nom': context.get('identite', {}).get('nom', '[Nom]'),
+        'prenom': context.get('identite', {}).get('prenom', '[Prénom]'),
+        'adresse': context.get('identite', {}).get('adresse', '[Adresse]'),
+    })
     
     # Generate objet from template
     objet_template = Template(modele['objet'])
