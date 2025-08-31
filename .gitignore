@@ -8,6 +8,13 @@ web/node_modules/
 api/node_modules/
 node_modules/
 
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
 # Environment files
 .env
 .env.local
