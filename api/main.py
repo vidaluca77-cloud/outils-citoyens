@@ -20,6 +20,10 @@ app.add_middleware(
 from chat import router as chat_router
 app.include_router(chat_router)
 
+# Include legal router
+from legal.router import router as legal_router
+app.include_router(legal_router)
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

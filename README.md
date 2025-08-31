@@ -82,3 +82,51 @@ et retourne **obligatoirement** :
 - `GET /health` → `{ "ok": true }`
 - `/outil/amendes` → formulaire auto, envoi à `/generate`, rendu des 4 blocs.
 - Les 12 outils sont accessibles via `/outil/[id]` avec leurs schémas.
+
+## Recherche juridique
+
+Le système inclut une fonctionnalité de recherche juridique avec sources françaises récentes.
+
+### Fonctionnalités
+
+- **Page `/recherche-juridique`** : Interface de recherche dans les sources juridiques
+- **Sources officielles** : Légifrance, Cour de cassation, Conseil d'État, Service-public.fr
+- **Filtrage temporel** : Limité aux 24 derniers mois par défaut
+- **Synthèse automatisée** : Réponses générées par IA avec citations
+- **Intégration assistant** : Détection automatique des questions juridiques
+
+### Architecture technique
+
+- **API** : Module `api/legal/` avec endpoints REST
+- **Vector Store** : Supabase (pgvector) ou fallback SQLite local
+- **Embeddings** : OpenAI text-embedding-3-small
+- **Sources** : Ingestion périodique depuis APIs publiques
+
+### Configuration
+
+Variables d'environnement requises :
+
+```bash
+# OpenAI (obligatoire)
+OPENAI_API_KEY=sk-...
+
+# Vector Store (optionnel - fallback local si absent)
+SUPABASE_URL=https://xxx.supabase.co
+SUPABASE_ANON_KEY=eyJ...
+
+# Sources juridiques (optionnel)
+LEGIFRANCE_API_KEY=xxx  # Si disponible, sinon utilise data.gouv
+```
+
+### Utilisation
+
+1. **Interface web** : `/recherche-juridique`
+2. **API directe** : `POST /legal/search` avec `{"question": "...", "limit": 6}`
+3. **Ingestion** : `python -m api.legal.ingest --since 24`
+
+### Sécurité
+
+- Pas de stockage de données utilisateur
+- Sources officielles uniquement
+- Disclaimer obligatoire sur chaque réponse
+- Respect des robots.txt et CGU
