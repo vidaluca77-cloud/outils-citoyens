@@ -48,6 +48,7 @@ Thumbs.db
 
 # Temporary files
 /tmp/__pycache__/
+test_fix.py
 
 # Legal search database and vector files
 legal_docs.db
