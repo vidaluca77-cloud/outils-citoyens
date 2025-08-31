@@ -303,8 +303,15 @@ export function ToolPageClient({ params }: { params: { id: string } }) {
         // Make schema available globally for FormField components
         ;(window as any).currentSchema = loadedSchema
       })
-      .catch(() => {
-        setToastMessage('Erreur lors du chargement du schéma')
+      .catch((error) => {
+        console.error('Schema loading error:', error)
+        let errorMessage = 'Erreur lors du chargement du schéma'
+        
+        if (error.name === 'NetworkError' || error.message?.includes('fetch')) {
+          errorMessage = 'Erreur de connexion lors du chargement du formulaire. Vérifiez votre connexion internet.'
+        }
+        
+        setToastMessage(errorMessage)
         setToastType('error')
       })
   }, [id])
@@ -361,6 +368,38 @@ export function ToolPageClient({ params }: { params: { id: string } }) {
     return true
   }
 
+  // Retry mechanism for network requests
+  const makeRequestWithRetry = async (url: string, data: any, maxRetries = 2): Promise<any> => {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const response = await axios.post(url, data, {
+          timeout: 30000, // 30 seconds timeout
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+        return response
+      } catch (error: any) {
+        const isNetworkError = error.code === 'NETWORK_ERROR' || 
+                              error.code === 'ERR_NETWORK' || 
+                              error.code === 'ECONNREFUSED' ||
+                              error.response?.status === 0 ||
+                              error.message?.includes('Network Error')
+        
+        // Only retry on network errors, not on validation or other server errors
+        if (attempt < maxRetries && isNetworkError) {
+          console.log(`Attempt ${attempt + 1} failed, retrying...`)
+          // Wait before retrying (exponential backoff)
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000))
+          continue
+        }
+        
+        // Re-throw the error if we've exhausted retries or it's not a network error
+        throw error
+      }
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -373,7 +412,7 @@ export function ToolPageClient({ params }: { params: { id: string } }) {
     setLoading(true)
     
     try {
-      const response = await axios.post(`${API}/generate`, {
+      const response = await makeRequestWithRetry(`${API}/generate`, {
         tool_id: id,
         fields: values
       })
@@ -394,10 +433,26 @@ export function ToolPageClient({ params }: { params: { id: string } }) {
       console.error('Generation error:', error)
       let errorMessage = 'Erreur lors de la génération'
       
-      if (error.response?.data?.detail) {
+      // Enhanced network error handling
+      if (error.code === 'NETWORK_ERROR' || error.code === 'ERR_NETWORK') {
+        errorMessage = 'Erreur de connexion au serveur. Vérifiez votre connexion internet et réessayez.'
+      } else if (error.code === 'ECONNREFUSED' || error.message?.includes('ECONNREFUSED')) {
+        errorMessage = 'Impossible de se connecter au serveur. Le service pourrait être temporairement indisponible.'
+      } else if (error.code === 'TIMEOUT' || error.code === 'ETIMEDOUT') {
+        errorMessage = 'La requête a pris trop de temps. Veuillez réessayer.'
+      } else if (error.response?.status === 0) {
+        errorMessage = 'Erreur de réseau - Impossible de joindre le serveur. Vérifiez votre connexion internet.'
+      } else if (error.response?.status >= 500) {
+        errorMessage = 'Erreur serveur temporaire. Veuillez réessayer dans quelques instants.'
+      } else if (error.response?.data?.detail) {
         errorMessage = error.response.data.detail
       } else if (error.message) {
-        errorMessage = error.message
+        // Check for common network error patterns
+        if (error.message.includes('Network Error') || error.message.includes('fetch')) {
+          errorMessage = 'Erreur de connexion réseau. Vérifiez votre connexion internet et réessayez.'
+        } else {
+          errorMessage = error.message
+        }
       }
       
       setToastMessage(errorMessage)
