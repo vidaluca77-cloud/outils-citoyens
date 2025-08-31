@@ -1154,7 +1154,29 @@ def get_mock_response(tool_id: str, user_fields: dict = None) -> Dict[str, Any]:
         try:
             prompt_data = prompting.build_prompt(tool_id, user_fields or {})
             template_str = prompt_data['template']
-            rendered_letter = render_letter_with_template(template_str, response, user_fields or {}, tool_id)
+            
+            # Ensure we have valid template variables by merging response letter data with user fields
+            template_vars = {
+                'tool_id': tool_id,
+                **(user_fields or {}),  # User form data
+                **response.get('lettre', {}),  # Generated letter components from mock
+            }
+            
+            # Special handling to ensure key elements appear in rendered letters
+            if tool_id == "amendes" and user_fields:
+                template_vars.update({
+                    'numero_process_verbal': user_fields.get('numero_process_verbal'),
+                    'date_infraction': user_fields.get('date_infraction'),
+                    'lieu': user_fields.get('lieu'),
+                    'motif_contestation': user_fields.get('motif_contestation'),
+                })
+            elif tool_id == "caf" and user_fields:
+                template_vars.update({
+                    'numero_allocataire': user_fields.get('numero_allocataire'),
+                    'type_courrier': user_fields.get('type_courrier'),
+                })
+            
+            rendered_letter = render_letter_with_template(template_str, {'lettre': template_vars}, template_vars, tool_id)
             response['lettre'] = rendered_letter
         except Exception as e:
             logger.warning(f"Template rendering failed in mock response: {e}")
