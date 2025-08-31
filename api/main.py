@@ -292,12 +292,12 @@ def integrate_amendes_data(response: Dict[str, Any], user_fields: dict) -> Dict[
     # Deep copy to avoid modifying the original
     personalized = copy.deepcopy(response)
     
-    # Extract user data with fallbacks
-    numero = user_fields.get("numero_amende", "[Numéro PV]")
-    motif = user_fields.get("motif", "[Motif de la contravention]")
+    # Extract user data with fallbacks - using correct field names from schema
+    numero = user_fields.get("numero_process_verbal", "[Numéro PV]")
+    motif = user_fields.get("motif_contestation", "[Motif de la contravention]")
     lieu = user_fields.get("lieu", "[Lieu de l'infraction]")
-    date_pv = user_fields.get("date", "[Date]")
-    heure = user_fields.get("heure", "[Heure]")
+    date_pv = user_fields.get("date_infraction", "[Date]")
+    heure = user_fields.get("heure_infraction", "[Heure]")
     
     # Calculate 45-day deadline if date is provided
     deadline_text = "[45 jours après réception]"
@@ -331,7 +331,9 @@ J'ai l'honneur de porter à votre connaissance ma contestation formelle du proc�
 
 Après examen attentif des circonstances de fait et de droit, je conteste cette verbalisation pour les motifs juridiques suivants :
 
-[Exposé détaillé et argumenté des moyens de contestation selon les preuves disponibles]
+{motif}
+
+{user_fields.get('elements_preuve', 'Les éléments de preuve suivants appuient ma contestation') if user_fields.get('elements_preuve') else '[Exposé détaillé et argumenté des moyens de contestation selon les preuves disponibles]'}
 
 En conséquence, et conformément aux dispositions de l'article 530 du Code de procédure pénale, je sollicite respectueusement l'annulation pure et simple de cette contravention.
 
@@ -341,6 +343,14 @@ Dans l'attente de votre décision motivée, je vous prie d'agréer, Monsieur l'O
     lettre["pj"][0] = f"Copie intégrale du procès-verbal n° {numero}"
     if lieu != "[Lieu de l'infraction]":
         lettre["pj"][1] = f"Photographies horodatées du lieu {lieu}"
+    
+    # Update signature with user identity if available
+    identite = user_fields.get("identite", {})
+    if identite:
+        nom = identite.get("nom", "")
+        prenom = identite.get("prenom", "")
+        adresse = identite.get("adresse", "")
+        lettre["signature"] = f"{prenom} {nom}\n{adresse}\nTél. : [Numéro de téléphone]\nFait à [Ville], le {date_pv}"
     
     # Personalize checklist
     if deadline_text != "[45 jours après réception]":
@@ -1189,43 +1199,16 @@ def get_mock_response(tool_id: str, user_fields: dict = None) -> Dict[str, Any]:
         # Apply quality enhancement to all responses
         response = enhance_response_quality(response, user_fields, tool_id)
         
-        # Note: Template rendering disabled for mock responses to maintain 
-        # structured letter format expected by frontend
-        # The frontend expects: { lettre: { destinataire_bloc, objet, corps, pj, signature } }
-        # not a single template string
-        """
-        # Also render letter template for mock responses to maintain consistency
+        # Also render letter template for mock responses to provide full document
         try:
-            prompt_data = prompting.build_prompt(tool_id, user_fields or {})
-            template_str = prompt_data['template']
-            
-            # Ensure we have valid template variables by merging response letter data with user fields
-            template_vars = {
-                'tool_id': tool_id,
-                **(user_fields or {}),  # User form data
-                **response.get('lettre', {}),  # Generated letter components from mock
-            }
-            
-            # Special handling to ensure key elements appear in rendered letters
-            if tool_id == "amendes" and user_fields:
-                template_vars.update({
-                    'numero_process_verbal': user_fields.get('numero_process_verbal'),
-                    'date_infraction': user_fields.get('date_infraction'),
-                    'lieu': user_fields.get('lieu'),
-                    'motif_contestation': user_fields.get('motif_contestation'),
-                })
-            elif tool_id == "caf" and user_fields:
-                template_vars.update({
-                    'numero_allocataire': user_fields.get('numero_allocataire'),
-                    'type_courrier': user_fields.get('type_courrier'),
-                })
-            
-            rendered_letter = render_letter_with_template(template_str, {'lettre': template_vars}, template_vars, tool_id)
-            response['lettre'] = rendered_letter
+            template_str = prompting.load_template(tool_id)
+            if template_str and user_fields:
+                # Render template and add as rendered_letter field
+                rendered = render_letter_with_template(template_str, response, user_fields, tool_id)
+                response['rendered_letter'] = rendered
+                
         except Exception as e:
-            logger.warning(f"Template rendering failed in mock response: {e}")
-            # Keep the original dict format as fallback
-        """
+            logger.error(f"Template rendering failed for mock response {tool_id}: {e}")
         
         return response
     
