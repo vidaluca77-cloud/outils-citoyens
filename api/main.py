@@ -61,33 +61,107 @@ def load_templates():
 SYSTEM_PROMPT = load_system_prompt()
 TEMPLATES = load_templates()
 
-def get_mock_response(tool_id: str) -> Dict[str, Any]:
-    """Enhanced fallback mock response when OpenAI is unavailable"""
+def integrate_amendes_data(response: Dict[str, Any], user_fields: dict) -> Dict[str, Any]:
+    """Integrate user data into amendes mock response for personalization"""
+    import copy
+    from datetime import datetime, timedelta
+    
+    # Deep copy to avoid modifying the original
+    personalized = copy.deepcopy(response)
+    
+    # Extract user data with fallbacks
+    numero = user_fields.get("numero_amende", "[Numéro PV]")
+    motif = user_fields.get("motif", "[Motif de la contravention]")
+    lieu = user_fields.get("lieu", "[Lieu de l'infraction]")
+    date_pv = user_fields.get("date", "[Date]")
+    heure = user_fields.get("heure", "[Heure]")
+    
+    # Calculate 45-day deadline if date is provided
+    deadline_text = "[45 jours après réception]"
+    if date_pv and "/" in str(date_pv):
+        try:
+            # Assume format DD/MM/YYYY and calculate 45 days later
+            day, month, year = map(int, str(date_pv).split("/"))
+            pv_date = datetime(year, month, day)
+            deadline = pv_date + timedelta(days=45)
+            deadline_text = deadline.strftime("%d/%m/%Y")
+        except:
+            pass  # Keep fallback if parsing fails
+    
+    # Personalize resume
+    if "numéro" in str(personalized["resume"][0]).lower():
+        personalized["resume"][0] = f"Analyser minutieusement les mentions du procès-verbal n° {numero} dans un délai de 5 jours"
+    
+    if len(personalized["resume"]) > 3:
+        personalized["resume"][3] = f"Expédier le courrier en LRAR avant l'échéance du {deadline_text} (45e jour après réception)"
+    
+    # Personalize letter
+    lettre = personalized["lettre"]
+    
+    # Update object with specific data
+    lettre["objet"] = f"Contestation formelle du procès-verbal n° {numero} - {motif.title()} du {date_pv} - Art. L121-3 du Code de la route"
+    
+    # Update letter body with personalized data
+    lettre["corps"] = f"""Monsieur l'Officier du Ministère Public,
+
+J'ai l'honneur de porter à votre connaissance ma contestation formelle du procès-verbal n° {numero} dressé le {date_pv} à {heure} pour {motif} sur la voie publique sise {lieu}.
+
+Après examen attentif des circonstances de fait et de droit, je conteste cette verbalisation pour les motifs juridiques suivants :
+
+[Exposé détaillé et argumenté des moyens de contestation selon les preuves disponibles]
+
+En conséquence, et conformément aux dispositions de l'article 530 du Code de procédure pénale, je sollicite respectueusement l'annulation pure et simple de cette contravention.
+
+Dans l'attente de votre décision motivée, je vous prie d'agréer, Monsieur l'Officier du Ministère Public, l'expression de ma haute considération."""
+    
+    # Update pieces jointes with specific PV number
+    lettre["pj"][0] = f"Copie intégrale du procès-verbal n° {numero}"
+    if lieu != "[Lieu de l'infraction]":
+        lettre["pj"][1] = f"Photographies horodatées du lieu {lieu}"
+    
+    # Personalize checklist
+    if deadline_text != "[45 jours après réception]":
+        personalized["checklist"][0] = f"Respecter impérativement le délai légal de 45 jours (échéance : {deadline_text})"
+    
+    if lieu != "[Lieu de l'infraction]":
+        personalized["checklist"][1] = f"Photographier le lieu {lieu} avec horodatage pour constitution de preuves"
+    
+    if numero != "[Numéro PV]":
+        personalized["checklist"][3] = f"Vérifier l'exactitude des mentions du PV n° {numero} (heure, lieu, motif)"
+    
+    return personalized
+
+def get_mock_response(tool_id: str, user_fields: dict = None) -> Dict[str, Any]:
+    """Enhanced fallback mock response with user data integration when OpenAI is unavailable"""
     
     # Tool-specific mock responses that follow the new standards
     mock_responses = {
         "amendes": {
             "resume": [
-                "Rassembler les preuves de l'erreur de verbalisation",
-                "Rédiger une contestation argumentée en LRAR",
-                "Envoyer dans les 45 jours à l'OMP",
-                "Conserver une copie et l'accusé de réception",
-                "Attendre la réponse sous 3 mois maximum"
+                "Analyser minutieusement les mentions du procès-verbal dans un délai de 5 jours (art. L121-3 Code de la route)",
+                "Rassembler méthodiquement les preuves matérielles et testimoniales de l'erreur de verbalisation",
+                "Rédiger une contestation juridiquement argumentée selon les dispositions du Code de procédure pénale",
+                "Expédier le courrier en lettre recommandée avec accusé de réception avant l'expiration du délai de 45 jours",
+                "Constituer un dossier de suivi avec copies intégrales et accusés de réception pour traçabilité",
+                "Surveiller activement la réponse de l'Officier du Ministère Public dans un délai maximal de 3 mois",
+                "Préparer les éventuels recours complémentaires en cas de rejet non motivé de la contestation"
             ],
             "lettre": {
-                "destinataire_bloc": "Monsieur l'Officier du Ministère Public\nTribunal de Police\n[Code postal] [Ville]",
-                "objet": "Contestation PV - Stationnement",
-                "corps": "Monsieur l'Officier,\n\nJe conteste formellement le procès-verbal dressé.\n\nMotifs de contestation :\n[Détailler les arguments selon les éléments fournis]\n\nJe vous prie d'annuler cette contravention et vous adresse mes salutations respectueuses.",
-                "pj": ["Copie du PV", "Photos du lieu", "Justificatif d'identité"],
-                "signature": "[Nom Prénom]\n[Adresse complète]\nLe [Date]"
+                "destinataire_bloc": "Monsieur l'Officier du Ministère Public\nTribunal de Police de [Ville]\nService des Contraventions\n[Code postal] [Ville]",
+                "objet": "Contestation formelle du procès-verbal n° [Numéro] - Art. L121-3 du Code de la route",
+                "corps": "Monsieur l'Officier du Ministère Public,\n\nJ'ai l'honneur de porter à votre connaissance ma contestation formelle du procès-verbal n° [Numéro] dressé le [Date] à [Heure] pour [Motif] sur la voie publique sise [Lieu exact].\n\nAprès examen attentif des circonstances de fait et de droit, je conteste cette verbalisation pour les motifs juridiques suivants :\n\n[Exposé détaillé et argumenté des moyens de contestation]\n\nEn conséquence, et conformément aux dispositions légales en vigueur, je sollicite respectueusement l'annulation pure et simple de cette contravention.\n\nDans l'attente de votre décision motivée, je vous prie d'agréer, Monsieur l'Officier du Ministère Public, l'expression de ma haute considération.",
+                "pj": ["Copie intégrale du procès-verbal contesté", "Photographies horodatées des lieux", "Attestations circonstanciées de témoins", "Justificatif d'identité en cours de validité"],
+                "signature": "[Prénom NOM]\n[Adresse complète avec code postal]\nTél. : [Numéro de téléphone]\nFait à [Ville], le [Date]"
             },
             "checklist": [
-                "Envoyer en LRAR dans les 45 jours",
-                "Conserver l'original du PV",
-                "Prendre des photos du lieu si pertinent",
-                "Vérifier l'exactitude des mentions du PV"
+                "Respecter impérativement le délai légal de 45 jours à compter de la réception de l'avis (art. L121-3 Code de la route)",
+                "Photographier exhaustivement les lieux avec horodatage pour constitution de preuves",
+                "Recueillir des témoignages écrits et signés de personnes présentes lors des faits allégués",
+                "Vérifier scrupuleusement l'exactitude des mentions obligatoires du procès-verbal",
+                "Conserver précieusement l'original de l'avis de contravention et tous les accusés de réception",
+                "Calculer précisément les délais de prescription et de recours pour anticiper les échéances"
             ],
-            "mentions": "Aide automatisée – ne remplace pas un conseil d'avocat. Respecter impérativement le délai de 45 jours."
+            "mentions": "Aide juridique automatisée – ne se substitue aucunement aux conseils personnalisés d'un avocat spécialisé. Respecter impérativement le délai de contestation de 45 jours. En cas de complexité particulière, solliciter l'assistance d'un professionnel du droit. Possibilité de recours devant le tribunal compétent en cas de rejet non motivé."
         },
         "travail": {
             "resume": [
@@ -137,33 +211,42 @@ def get_mock_response(tool_id: str) -> Dict[str, Any]:
         }
     }
     
-    # Return tool-specific mock or generic fallback
+    # Return tool-specific mock with user data integration or generic fallback
     if tool_id in mock_responses:
-        return mock_responses[tool_id]
+        response = mock_responses[tool_id].copy()
+        
+        # Integrate user data for amendes tool specifically
+        if tool_id == "amendes" and user_fields:
+            response = integrate_amendes_data(response, user_fields)
+        
+        return response
     
-    # Generic fallback for other tools
+    # Generic enhanced fallback for other tools
     return {
         "resume": [
-            "Analyser votre situation juridique",
-            "Rassembler les documents nécessaires", 
-            "Rédiger un courrier approprié",
-            "Envoyer en recommandé avec AR",
-            "Suivre les délais de réponse"
+            "Analyser méthodiquement votre situation juridique au regard de la réglementation applicable",
+            "Constituer un dossier documentaire exhaustif avec l'ensemble des pièces justificatives pertinentes", 
+            "Rédiger un courrier administratif structuré et juridiquement fondé selon les règles de l'art",
+            "Expédier le courrier en lettre recommandée avec accusé de réception pour opposabilité légale",
+            "Effectuer un suivi rigoureux des délais de réponse et préparer les recours éventuels",
+            "Documenter chaque étape de la procédure pour assurer une traçabilité complète du dossier"
         ],
         "lettre": {
-            "destinataire_bloc": "Service compétent\nAdresse\nCP Ville",
-            "objet": f"{tool_id.upper()} — demande/contestation",
-            "corps": "Madame, Monsieur,\n\nJe vous adresse ce courrier concernant la situation décrite dans vos services.\n\n[Exposé des faits et demande]\n\nJe vous prie d'agréer mes salutations respectueuses.",
-            "pj": ["Copie du document", "Justificatif d'identité"],
-            "signature": "[Nom Prénom]\n[Adresse complète]\nLe [Date]"
+            "destinataire_bloc": "Service compétent\n[Dénomination précise du service]\n[Adresse complète]\n[Code postal] [Ville]",
+            "objet": f"Demande relative à {tool_id.upper()} - Dossier n° [Référence]",
+            "corps": "Madame la Directrice, Monsieur le Directeur,\n\nJ'ai l'honneur de porter à votre connaissance ma demande relative à la situation administrative exposée ci-après.\n\n[Exposé circonstancié des faits et du fondement juridique de la demande]\n\nEn conséquence, je sollicite respectueusement votre intervention pour [objet précis de la demande].\n\nDans l'attente de votre réponse dans les délais réglementaires, je vous prie d'agréer, Madame la Directrice, Monsieur le Directeur, l'expression de ma considération distinguée.",
+            "pj": ["Copie certifiée conforme du document de référence", "Justificatif d'identité en cours de validité", "Pièces complémentaires selon la réglementation applicable"],
+            "signature": "[Prénom NOM en majuscules]\n[Qualité/Statut si pertinent]\n[Adresse complète]\nTéléphone : [Numéro]\nCourriel : [Email]\nFait à [Ville], le [Date complète]"
         },
         "checklist": [
-            "Conserver une copie signée de tous documents",
-            "Respecter les délais légaux indiqués", 
-            "Joindre toutes les pièces justificatives",
-            "Suivre l'accusé de réception"
+            "Conserver rigoureusement une copie intégrale signée de tous les documents transmis",
+            "Respecter scrupuleusement les délais légaux et réglementaires applicables à votre situation", 
+            "Joindre systématiquement toutes les pièces justificatives exigées par la procédure",
+            "Assurer un suivi méthodique des accusés de réception et des délais de traitement",
+            "Préparer les voies de recours appropriées en cas de décision défavorable",
+            "Solliciter l'assistance d'un professionnel du droit en cas de complexité particulière"
         ],
-        "mentions": "Aide automatisée – ne remplace pas un conseil d'avocat. Vérifier les délais légaux applicables à votre situation."
+        "mentions": "Aide juridique automatisée – ne se substitue aucunement aux conseils personnalisés d'un avocat spécialisé. Vérifier impérativement les délais légaux et conditions d'éligibilité applicables à votre situation particulière. Possibilité de recours gracieux puis contentieux selon la nature du litige. Documentation juridique disponible sur les sites officiels des administrations compétentes."
     }
 
 def validate_and_fix_response(response_data: Dict[str, Any], tool_id: str) -> Dict[str, Any]:
@@ -283,15 +366,23 @@ def generate_with_two_passes(system_prompt: str, user_prompt: str, tool_id: str)
 
 {json.dumps(validated_pass1, ensure_ascii=False, indent=2)}
 
-Vérifie la structure, le ton et la clarté. Si des champs sont trop vagues, remplace par des formulations neutres et ajoute dans checklist l'action pour compléter. 
+CRITIQUE PROFESSIONNELLE REQUISE - Améliore la qualité et le professionnalisme :
 
-Assure-toi que :
-- resume contient 4-8 puces concrètes et utiles
-- checklist utilise des verbes à l'infinitif et des actions claires  
-- mentions contient 2-4 rappels prudents
-- lettre a un ton administratif approprié et des informations précises
+1. PERSONNALISATION : Intègre mieux les données utilisateur dans tous les champs (dates, noms, montants, références). Évite les formulations génériques.
 
-Réponds en JSON strict identique avec ces améliorations."""
+2. TONALITÉ PROFESSIONNELLE : Vérifie que le langage administratif est soutenu, précis et élégant. Améliore les formules de politesse et la structure argumentative.
+
+3. PRÉCISION JURIDIQUE : Ajoute des références légales spécifiques, calcule les délais exacts, mentionne les procédures détaillées.
+
+4. EXHAUSTIVITÉ : Assure-toi que :
+   - resume contient 5-8 étapes détaillées avec estimations temporelles
+   - lettre intègre parfaitement les données fournies et utilise un vocabulaire juridique approprié
+   - checklist inclut des actions expertes avec délais précis
+   - mentions contient 3-5 rappels juridiques prudents avec références aux recours
+
+5. ÉLÉGANCE RÉDACTIONNELLE : Évite les répétitions, utilise des synonymes, structure les paragraphes logiquement.
+
+Réponds en JSON strict identique mais considérablement amélioré selon ces critères professionnels."""
 
         pass2_response = call_openai_with_retry(system_prompt, critique_prompt)
         
@@ -361,4 +452,4 @@ Exemple de structure attendue:
     
     # Fallback to mock response
     logger.info(f"Using mock response for tool: {in_.tool_id}")
-    return get_mock_response(in_.tool_id)
+    return get_mock_response(in_.tool_id, in_.fields)
