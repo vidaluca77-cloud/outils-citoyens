@@ -1,0 +1,45 @@
+DESTINATAIRE: {{ fournisseur or "[Fournisseur d'énergie]" }}
+Service Clientèle - Réclamations
+{{ adresse_fournisseur or "[Adresse du fournisseur]" }}
+{{ code_postal or "[Code postal]" }} {{ ville_fournisseur or "[Ville]" }}
+
+OBJET: Contestation facture{% if facture_numero %} n° {{ facture_numero }}{% endif %}{% if montant_conteste %} - Montant {{ montant_conteste }}€{% endif %}{% if motif_contestation %} - {{ motif_contestation }}{% endif %}
+
+CORPS:
+Madame, Monsieur,
+
+Client de votre société {{ fournisseur or "[Fournisseur]" }}{% if numero_client %}, numéro client {{ numero_client }}{% endif %}, je vous adresse la présente pour contester formellement {% if facture_numero %}la facture n° {{ facture_numero }}{% else %}une facture{% endif %}{% if montant_conteste %} d'un montant de {{ montant_conteste }}€{% endif %}{% if periode %} pour la période {{ periode }}{% endif %}.
+
+Cette facturation me semble erronée pour les motifs suivants : {{ motif_contestation or "consommation anormalement élevée par rapport à la période précédente" }}.
+
+{% if consommation_habituelle -%}
+Ma consommation habituelle s'élève à {{ consommation_habituelle }}, ce qui rend cette facturation suspecte.
+{% endif %}
+
+Après vérification de mes relevés de consommation et comparaison avec les périodes précédentes, je constate une anomalie manifeste qui nécessite une révision de cette facture.
+
+Conformément au Code de l'énergie et aux conditions générales de vente, je vous demande de procéder à une vérification de votre comptage et à une rectification de cette facture.
+
+{% if demande_visite -%}
+Je souhaite qu'un technicien se déplace pour vérifier le bon fonctionnement du compteur.
+{% endif %}
+
+Dans l'attente de votre réponse sous 30 jours, je vous prie d'agréer, Madame, Monsieur, l'expression de ma considération distinguée.
+
+PIÈCES JOINTES:
+{% for pj in pieces_jointes -%}
+- {{ pj }}
+{% endfor %}
+
+SIGNATURE:
+{% if identite -%}
+{{ identite.prenom }} {{ identite.nom }}
+{{ identite.adresse }}
+{%- else -%}
+[Votre prénom et nom]
+[Votre adresse complète]
+{%- endif %}
+{% if numero_client %}N° client : {{ numero_client }}{% endif %}
+Téléphone : [Votre numéro]
+
+Fait à {{ ville_signature or "[Ville]" }}, le {{ date_courrier or "[Date]" }}

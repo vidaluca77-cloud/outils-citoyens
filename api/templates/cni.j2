@@ -1,0 +1,53 @@
+DESTINATAIRE: Mairie de {{ ville or "[Ville]" }}
+Service État Civil
+{{ adresse_mairie or "[Adresse de la mairie]" }}
+{{ code_postal or "[Code postal]" }} {{ ville or "[Ville]" }}
+
+OBJET: {% if type_demande %}{{ type_demande|title }}{% else %}Demande de titre d'identité{% endif %}{% if urgence and urgence == "oui" %} - URGENCE{% endif %}
+
+CORPS:
+Madame, Monsieur,
+
+{% if type_demande and "renouvellement" in type_demande.lower() -%}
+Je sollicite le renouvellement de ma carte nationale d'identité arrivée à expiration{% if date_expiration %} le {{ date_expiration }}{% endif %}.
+{%- elif type_demande and "premiere" in type_demande.lower() -%}
+Je sollicite l'établissement de ma première carte nationale d'identité.
+{%- else -%}
+Je sollicite l'établissement d'une carte nationale d'identité.
+{%- endif %}
+
+{% if urgence and urgence == "oui" -%}
+Cette demande revêt un caractère urgent{% if motif_urgence %} en raison de {{ motif_urgence }}{% endif %}.
+{% endif %}
+
+{% if situation_particuliere -%}
+Situation particulière : {{ situation_particuliere }}
+{% endif %}
+
+Je souhaite prendre rendez-vous dans les meilleurs délais pour déposer ma demande et réaliser les formalités nécessaires.
+
+{% if disponibilites -%}
+Mes disponibilités : {{ disponibilites }}
+{% endif %}
+
+Je vous prie de bien vouloir m'indiquer les créneaux disponibles et de me confirmer la liste exacte des pièces à fournir.
+
+Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations respectueuses.
+
+PIÈCES JOINTES:
+{% for pj in pieces_jointes -%}
+- {{ pj }}
+{% endfor %}
+
+SIGNATURE:
+{% if identite -%}
+{{ identite.prenom }} {{ identite.nom }}
+{{ identite.adresse }}
+{%- else -%}
+[Votre prénom et nom]
+[Votre adresse complète]
+{%- endif %}
+Téléphone : [Votre numéro]
+Email : [Votre email]
+
+Fait à {{ ville_signature or "[Ville]" }}, le {{ date_courrier or "[Date]" }}

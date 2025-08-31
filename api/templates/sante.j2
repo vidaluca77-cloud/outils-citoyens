@@ -1,0 +1,42 @@
+DESTINATAIRE: {% if type_demande and "medecin" in type_demande.lower() %}Ordre des Médecins{% else %}Centre de soins{% endif %}
+{% if ville %}{{ ville }}{% else %}[Ville]{% endif %}
+{{ adresse_centre or "[Adresse du centre]" }}
+{{ code_postal or "[Code postal]" }} {{ ville or "[Ville]" }}
+
+OBJET: {% if type_demande %}Demande de {{ type_demande }}{% else %}Demande d'accès aux soins{% endif %}{% if probleme %} - {{ probleme }}{% endif %}
+
+CORPS:
+Madame, Monsieur,
+
+Résidant à {{ ville or "[Ville]" }}, je rencontre des difficultés pour {% if type_demande %}{{ type_demande }}{% else %}accéder aux soins{% endif %}{% if probleme %} : {{ probleme }}{% endif %}.
+
+{% if urgence and urgence == "oui" -%}
+Cette situation revêt un caractère urgent nécessitant une prise en charge rapide.
+{%- else -%}
+Je sollicite votre aide pour accéder aux soins dans les délais légaux de 6 jours.
+{%- endif %}
+
+{% if medecin_souhaite -%}
+Je recherche un médecin {{ medecin_souhaite }} disponible pour assurer un suivi médical régulier et de qualité selon mes besoins de santé.
+{%- endif %}
+
+Pourriez-vous m'orienter vers les professionnels de santé disponibles à {{ ville or "[Ville]" }} ou les dispositifs d'aide existants ?
+
+Je vous remercie de votre aide et vous prie d'agréer, Madame, Monsieur, l'expression de ma considération distinguée.
+
+PIÈCES JOINTES:
+{% for pj in pieces_jointes -%}
+- {{ pj }}
+{% endfor %}
+
+SIGNATURE:
+{% if identite -%}
+{{ identite.prenom }} {{ identite.nom }}
+{{ identite.adresse }}
+{%- else -%}
+[Votre prénom et nom]
+[Votre adresse complète]
+{%- endif %}
+Téléphone : [Votre numéro]
+
+Fait à {{ ville_signature or "[Ville]" }}, le {{ date_courrier or "[Date]" }}
