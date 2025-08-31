@@ -129,14 +129,50 @@ function FormField({
     )
   }
   
+  // Handle boolean fields
+  if (fieldDef.type === 'boolean') {
+    return (
+      <Field label={label} error={error} required={fieldDef.required}>
+        <Select 
+          value={value === null || value === undefined ? '' : value.toString()} 
+          onChange={(val) => {
+            if (val === '') {
+              onChange(null)
+            } else {
+              onChange(val === 'true')
+            }
+          }}
+          options={[
+            { value: '', label: 'Sélectionner...' },
+            { value: 'false', label: 'Non' },
+            { value: 'true', label: 'Oui' }
+          ]}
+        />
+      </Field>
+    )
+  }
+
   // Handle regular input fields
   return (
     <Field label={label} error={error} required={fieldDef.required}>
       <Input 
-        type={isDateField(fieldKey) ? 'date' : 'text'}
+        type={isDateField(fieldKey) ? 'date' : fieldDef.type === 'number' || fieldDef.type === 'integer' ? 'number' : 'text'}
         value={value || ''} 
-        onChange={onChange}
+        onChange={(val) => {
+          // Convert to appropriate type for number fields
+          if (fieldDef.type === 'number') {
+            const numVal = val === '' ? null : parseFloat(val)
+            onChange(isNaN(numVal) ? null : numVal)
+          } else if (fieldDef.type === 'integer') {
+            const intVal = val === '' ? null : parseInt(val)
+            onChange(isNaN(intVal) ? null : intVal)
+          } else {
+            onChange(val)
+          }
+        }}
         placeholder={fieldDef.description || `Entrer ${label.toLowerCase()}`}
+        step={fieldDef.type === 'number' ? '0.01' : undefined}
+        min={fieldDef.type === 'number' || fieldDef.type === 'integer' ? '0' : undefined}
       />
     </Field>
   )
