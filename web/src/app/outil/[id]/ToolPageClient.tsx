@@ -85,7 +85,7 @@ function FormField({
               fieldKey={subKey}
               fieldDef={subDef}
               value={value?.[subKey] || ''}
-              onChange={(subValue) => onChange({ ...value, [subKey]: subValue })}
+              onChange={(subValue) => onChange({ ...(value || {}), [subKey]: subValue })}
               errors={errors}
               parentKey={fullKey}
             />
@@ -230,7 +230,7 @@ export function ToolPageClient({ params }: { params: { id: string } }) {
     try {
       const response = await axios.post(`${API}/generate`, {
         tool_id: id,
-        data: values
+        fields: values
       })
       
       setResp(response.data)
