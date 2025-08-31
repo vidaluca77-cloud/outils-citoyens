@@ -40,7 +40,7 @@ export function Field({ label, error, required, children, className }: FieldProp
   )
 }
 
-export function Input({ className, error, ...props }: InputProps) {
+export function Input({ className, error, onChange, ...props }: InputProps & { onChange?: (value: string) => void }) {
   return (
     <input
       className={cn(
@@ -48,12 +48,13 @@ export function Input({ className, error, ...props }: InputProps) {
         error && 'border-destructive',
         className
       )}
+      onChange={(e) => onChange?.(e.target.value)}
       {...props}
     />
   )
 }
 
-export function Textarea({ className, error, ...props }: TextareaProps) {
+export function Textarea({ className, error, onChange, ...props }: TextareaProps & { onChange?: (value: string) => void }) {
   return (
     <textarea
       className={cn(
@@ -62,12 +63,13 @@ export function Textarea({ className, error, ...props }: TextareaProps) {
         className
       )}
       rows={4}
+      onChange={(e) => onChange?.(e.target.value)}
       {...props}
     />
   )
 }
 
-export function Select({ className, error, options, children, ...props }: SelectProps) {
+export function Select({ className, error, options, children, onChange, ...props }: SelectProps & { onChange?: (value: string) => void }) {
   return (
     <select
       className={cn(
@@ -75,6 +77,7 @@ export function Select({ className, error, options, children, ...props }: Select
         error && 'border-destructive',
         className
       )}
+      onChange={(e) => onChange?.(e.target.value)}
       {...props}
     >
       {children}
