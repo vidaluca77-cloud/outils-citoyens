@@ -3,5 +3,6 @@ uvicorn[standard]
 pydantic
 openai
 python-multipart
+jinja2
 numpy
 requests

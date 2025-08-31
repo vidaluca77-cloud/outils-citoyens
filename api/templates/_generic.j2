@@ -1,0 +1,26 @@
+DESTINATAIRE: {{ destinataire or "Service compétent" }}
+{{ destinataire_adresse or "" }}
+
+OBJET: {{ objet or ("Courrier – " + tool_id|upper) }}
+
+CORPS:
+{{ corps }}
+
+PIÈCES JOINTES:
+{% for pj in pieces_jointes -%}
+- {{ pj }}
+{% endfor %}
+
+SIGNATURE:
+{% if identite -%}
+{{ identite.prenom }} {{ identite.nom }}
+{{ identite.adresse }}
+{%- else -%}
+[Votre prénom et nom]
+[Votre adresse complète]
+{%- endif %}
+
+Fait à [Ville], le [Date]
+
+---
+Lettre générée automatiquement – à relire avant envoi.

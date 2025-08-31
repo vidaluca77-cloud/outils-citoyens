@@ -1,0 +1,44 @@
+DESTINATAIRE: {{ bailleur or "[Nom du bailleur]" }}
+{% if qualite_bailleur %}{{ qualite_bailleur }}{% else %}[Propriétaire bailleur]{% endif %}
+{{ adresse_bailleur or "[Adresse du bailleur]" }}
+{{ code_postal_bailleur or "[Code postal]" }} {{ ville_bailleur or "[Ville]" }}
+
+OBJET: Contestation du montant du loyer - Logement sis {{ adresse_logement or "[Adresse du logement]" }} - Encadrement des loyers
+
+CORPS:
+Monsieur/Madame le Bailleur,
+
+J'ai l'honneur de porter à votre connaissance ma contestation formelle concernant le montant du loyer pratiqué pour le logement que j'occupe sis {{ adresse_logement or "[Adresse du logement]" }}, {{ ville or "[Ville]" }}.
+
+Après vérification auprès des services compétents, il apparaît que le loyer mensuel de {{ loyer_actuel or "[Montant du loyer]" }}€ {% if surface %}pour un logement de {{ surface }}m²{% endif %} dépasse manifestement les plafonds légaux en vigueur dans cette zone.
+
+{% if calcul_depassement -%}
+Calcul du dépassement : {{ calcul_depassement }}
+{% endif %}
+
+Conformément aux dispositions de la loi ELAN et du décret d'application relatif à l'encadrement des loyers, je vous demande de bien vouloir procéder à la régularisation de cette situation en ramenant le loyer au montant légalement autorisé.
+
+{% if proposition_nouveau_loyer -%}
+Le montant de référence applicable s'élève à {{ proposition_nouveau_loyer }}€ mensuel.
+{% endif %}
+
+Dans l'attente de votre réponse et de la régularisation de cette situation, je vous prie d'agréer, Monsieur/Madame le Bailleur, l'expression de ma considération distinguée.
+
+PIÈCES JOINTES:
+{% for pj in pieces_jointes -%}
+- {{ pj }}
+{% endfor %}
+
+SIGNATURE:
+{% if identite -%}
+{{ identite.prenom }} {{ identite.nom }}
+Locataire
+{{ identite.adresse }}
+{%- else -%}
+[Votre prénom et nom]
+Locataire
+[Votre adresse complète]
+{%- endif %}
+Téléphone : [Votre numéro]
+
+Fait à {{ ville_signature or "[Ville]" }}, le {{ date_courrier or "[Date]" }}

@@ -1,0 +1,44 @@
+DESTINATAIRE: Caisse d'Allocations Familiales
+Service Contentieux et Recours
+{{ adresse_caf or "[Adresse CAF de votre département]" }}
+{{ code_postal or "[Code postal]" }} {{ ville or "[Ville]" }}
+
+OBJET: Recours gracieux - N° allocataire {{ numero_allocataire or "[Numéro allocataire]" }} {% if type_courrier %}- {{ type_courrier|title }}{% endif %}{% if montant %} - Montant {{ montant }}€{% endif %}
+
+CORPS:
+Madame, Monsieur,
+
+Allocataire sous le numéro {{ numero_allocataire or "[Numéro allocataire]" }}, je vous adresse la présente afin de contester formellement votre décision {% if type_courrier %}concernant {{ type_courrier }}{% endif %}{% if montant %} d'un montant de {{ montant }}€{% endif %}{% if periode %} pour la période {{ periode }}{% endif %}.
+
+Après examen attentif de votre courrier{% if date_courrier %} du {{ date_courrier }}{% endif %}, je conteste cette décision pour les motifs suivants :
+
+{{ motif or "[Exposé détaillé de votre situation et des arguments juridiques]" }}
+
+{% if situation_particuliere -%}
+Ma situation particulière : {{ situation_particuliere }}
+{% endif %}
+
+Cette décision me semble erronée au regard de ma situation réelle et des droits qui me sont reconnus par le Code de la sécurité sociale.
+
+Conformément à l'article R142-1 du Code de la sécurité sociale, je sollicite un recours gracieux et vous demande de bien vouloir réexaminer mon dossier en tenant compte des éléments ci-dessus.
+
+Dans l'attente de votre réponse dans un délai de 2 mois, je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations respectueuses.
+
+PIÈCES JOINTES:
+{% for pj in pieces_jointes -%}
+- {{ pj }}
+{% endfor %}
+
+SIGNATURE:
+{% if identite -%}
+{{ identite.prenom }} {{ identite.nom }}
+Allocataire n° {{ numero_allocataire or "[Numéro allocataire]" }}
+{{ identite.adresse }}
+{%- else -%}
+[Votre prénom et nom]
+Allocataire n° {{ numero_allocataire or "[Numéro allocataire]" }}
+[Votre adresse complète]
+{%- endif %}
+Téléphone : [Votre numéro]
+
+Fait à {{ ville_signature or "[Ville]" }}, le {{ date_courrier or "[Date]" }}

@@ -1,0 +1,49 @@
+DESTINATAIRE: Caisse Primaire d'Assurance Maladie
+Service Complémentaire Santé Solidaire
+{{ adresse_cpam or "[Adresse CPAM de votre département]" }}
+{{ code_postal or "[Code postal]" }} {{ ville or "[Ville]" }}
+
+OBJET: Demande de Complémentaire Santé Solidaire{% if foyer %} - Foyer {{ foyer }} personne(s){% endif %}{% if revenus %} - Revenus {{ revenus }}€/mois{% endif %}
+
+CORPS:
+Madame, Monsieur,
+
+J'ai l'honneur de solliciter l'attribution de la Complémentaire Santé Solidaire pour mon foyer{% if foyer %} composé de {{ foyer }} personne(s){% endif %}{% if statut %} {{ statut }}{% endif %}{% if revenus %}, avec des revenus mensuels nets de {{ revenus }}€{% endif %}.
+
+{% if situation_actuelle -%}
+Situation actuelle : {{ situation_actuelle }}
+{%- else -%}
+Je ne bénéficie actuellement d'aucune couverture complémentaire santé.
+{%- endif %}
+
+{% if eligibilite_calculee -%}
+Selon mes calculs, {{ eligibilite_calculee }}
+{% endif %}
+
+Cette demande s'inscrit dans le cadre de la solidarité nationale pour l'accès aux soins, et j'espère que mon dossier recevra un accueil favorable compte tenu de ma situation.
+
+{% if besoins_medicaux -%}
+Besoins médicaux particuliers : {{ besoins_medicaux }}
+{% endif %}
+
+Veuillez trouver ci-joint l'ensemble des pièces justificatives requises par la réglementation en vigueur. Je me tiens à votre disposition pour tout complément d'information nécessaire.
+
+Dans l'attente de votre réponse dans un délai de 2 mois, je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations respectueuses.
+
+PIÈCES JOINTES:
+{% for pj in pieces_jointes -%}
+- {{ pj }}
+{% endfor %}
+
+SIGNATURE:
+{% if identite -%}
+{{ identite.prenom }} {{ identite.nom }}
+{{ identite.adresse }}
+{%- else -%}
+[Votre prénom et nom]
+[Votre adresse complète]
+{%- endif %}
+{% if numero_secu %}N° Sécurité Sociale : {{ numero_secu }}{% endif %}
+Téléphone : [Votre numéro]
+
+Fait à {{ ville_signature or "[Ville]" }}, le {{ date_courrier or "[Date]" }}

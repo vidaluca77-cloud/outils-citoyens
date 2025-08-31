@@ -1,0 +1,48 @@
+DESTINATAIRE: {{ employeur or "[Nom de l'employeur]" }}
+Service Ressources Humaines
+{{ adresse_employeur or "[Adresse de l'entreprise]" }}
+{{ code_postal_employeur or "[Code postal]" }} {{ ville_employeur or "[Ville]" }}
+
+OBJET: {% if type_litige %}{{ type_litige|title }}{% else %}Réclamation professionnelle{% endif %}{% if periode %} - Période {{ periode }}{% endif %}{% if montant_estime %} - Montant estimé {{ montant_estime }}€{% endif %}
+
+CORPS:
+Monsieur le Directeur des Ressources Humaines,
+
+{% if type_litige and "heure" in type_litige.lower() -%}
+J'ai l'honneur de porter à votre connaissance que des heures supplémentaires effectuées au sein de votre entreprise {{ employeur or "[Nom de l'employeur]" }} n'ont pas été rémunérées conformément aux dispositions du Code du travail.
+
+{% if periode -%}Pour la période allant de {{ periode }}, {% else %}{% endif %}j'ai effectué des heures supplémentaires qui n'ont pas fait l'objet d'une rémunération selon les taux majorés légalement prévus{% if montant_estime %}. Le montant total des sommes dues s'élève approximativement à {{ montant_estime }}€{% endif %}.
+
+Conformément aux articles L3121-33 et suivants du Code du travail, je vous demande de procéder au règlement de ces heures supplémentaires sous un délai de 30 jours.
+{%- elif type_litige and "licenciement" in type_litige.lower() -%}
+Par la présente, je conteste formellement la procédure de licenciement qui m'a été notifiée{% if date_licenciement %} le {{ date_licenciement }}{% endif %} par votre entreprise {{ employeur or "[Nom de l'employeur]" }}.
+
+Cette procédure présente des irrégularités au regard des dispositions du Code du travail, notamment en matière de forme et de délais. Ces violations constituent un motif de nullité de la procédure.
+
+Je vous demande de bien vouloir procéder à ma réintégration et à la régularisation de ma situation sous 15 jours.
+{%- else -%}
+Je vous informe d'un {{ type_litige or "conflit professionnel" }} survenu dans le cadre de mon activité professionnelle au sein de votre entreprise {{ employeur or "[Nom de l'employeur]" }}.
+
+{% if periode -%}Pour la période {{ periode }}, {% endif %}ma situation nécessite une intervention de votre part pour une résolution conforme au droit du travail et aux conventions collectives applicables.
+
+Je sollicite un entretien dans les meilleurs délais pour examiner cette situation et trouver une solution satisfaisante.
+{%- endif %}
+
+Je vous prie d'agréer, Monsieur le Directeur, l'expression de ma considération distinguée.
+
+PIÈCES JOINTES:
+{% for pj in pieces_jointes -%}
+- {{ pj }}
+{% endfor %}
+
+SIGNATURE:
+{% if identite -%}
+{{ identite.prenom }} {{ identite.nom }}
+{{ identite.adresse }}
+{%- else -%}
+[Votre prénom et nom]
+[Votre adresse complète]
+{%- endif %}
+Téléphone : [Votre numéro]
+
+Fait à {{ ville_signature or "[Ville]" }}, le {{ date_courrier or "[Date]" }}

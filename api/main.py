@@ -8,6 +8,8 @@ import openai
 from openai import OpenAI
 from typing import Dict, Any, List
 import logging
+from jinja2 import Template
+import prompting
 
 app = FastAPI(title="Outils Citoyens API")
 
@@ -1152,6 +1154,38 @@ def get_mock_response(tool_id: str, user_fields: dict = None) -> Dict[str, Any]:
         # Apply quality enhancement to all responses
         response = enhance_response_quality(response, user_fields, tool_id)
         
+        # Also render letter template for mock responses to maintain consistency
+        try:
+            prompt_data = prompting.build_prompt(tool_id, user_fields or {})
+            template_str = prompt_data['template']
+            
+            # Ensure we have valid template variables by merging response letter data with user fields
+            template_vars = {
+                'tool_id': tool_id,
+                **(user_fields or {}),  # User form data
+                **response.get('lettre', {}),  # Generated letter components from mock
+            }
+            
+            # Special handling to ensure key elements appear in rendered letters
+            if tool_id == "amendes" and user_fields:
+                template_vars.update({
+                    'numero_process_verbal': user_fields.get('numero_process_verbal'),
+                    'date_infraction': user_fields.get('date_infraction'),
+                    'lieu': user_fields.get('lieu'),
+                    'motif_contestation': user_fields.get('motif_contestation'),
+                })
+            elif tool_id == "caf" and user_fields:
+                template_vars.update({
+                    'numero_allocataire': user_fields.get('numero_allocataire'),
+                    'type_courrier': user_fields.get('type_courrier'),
+                })
+            
+            rendered_letter = render_letter_with_template(template_str, {'lettre': template_vars}, template_vars, tool_id)
+            response['lettre'] = rendered_letter
+        except Exception as e:
+            logger.warning(f"Template rendering failed in mock response: {e}")
+            # Keep the original dict format as fallback
+        
         return response
     
     # Generic enhanced fallback for other tools
@@ -1287,59 +1321,121 @@ def call_openai_with_retry(system_prompt: str, user_prompt: str, max_retries: in
     
     raise Exception("Max retries exceeded")
 
-def generate_with_two_passes(system_prompt: str, user_prompt: str, tool_id: str) -> Dict[str, Any]:
-    """Generate response with two-pass auto-critique system"""
-    start_time = time.time()
-    
+def render_letter_with_template(template_str: str, generated_data: Dict[str, Any], user_fields: Dict[str, Any], tool_id: str) -> str:
+    """Render final letter using Jinja template"""
     try:
+        # Prepare template variables
+        template_vars = {
+            'tool_id': tool_id,
+            **user_fields,  # Include all user form data
+            **generated_data.get('lettre', {}),  # Include generated letter components
+        }
+        
+        # Render template
+        template = Template(template_str)
+        rendered = template.render(**template_vars)
+        
+        return rendered.strip()
+        
+    except Exception as e:
+        logger.error(f"Template rendering failed: {e}")
+        # Fallback to basic letter structure
+        lettre = generated_data.get('lettre', {})
+        return f"""DESTINATAIRE: {lettre.get('destinataire_bloc', 'Service compétent')}
+
+OBJET: {lettre.get('objet', f'Courrier – {tool_id.upper()}')}
+
+CORPS:
+{lettre.get('corps', 'Corps de la lettre...')}
+
+PIÈCES JOINTES:
+{chr(10).join(f'- {pj}' for pj in lettre.get('pj', ['Document de référence']))}
+
+SIGNATURE:
+{lettre.get('signature', '[Votre nom et adresse]')}
+
+---
+Lettre générée automatiquement – à relire avant envoi."""
+
+def generate_with_schema_driven_approach(tool_id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Generate response using schema-driven approach with 2-pass system"""
+    try:
+        # Build prompt using schema-driven approach
+        prompt_data = prompting.build_prompt(tool_id, payload)
+        
+        # Construct enhanced system prompt for 2-pass generation
+        system_prompt = f"""{prompt_data['system']}
+
+{prompt_data['instructions']}
+
+Tu dois OBLIGATOIREMENT répondre avec un JSON valide contenant exactement ces 4 clés:
+- "resume": array de 5-8 strings concrètes (étapes à suivre avec conseil rassurant)
+- "lettre": objet avec les clés "destinataire_bloc", "objet", "corps", "pj" (array), "signature"  
+- "checklist": array de 3-6 strings (actions claires, verbes à l'infinitif)
+- "mentions": string (2-4 rappels juridiques bienveillants)
+
+PASS 1: Génère un brouillon JSON avec toutes les clés requises."""
+        
+        # User prompt with context and examples
+        user_prompt = f"""Contexte utilisateur:
+{prompt_data['context']}
+
+Utilise ces blueprints comme guide:
+Checklist: {prompt_data['checklist_blueprint']}
+Mentions: {prompt_data['mentions_blueprint']}
+
+Génère une réponse JSON complète et personnalisée selon le contexte."""
+        
         # Pass 1: Initial generation
-        logger.info(f"Pass 1 - Initial generation for tool: {tool_id}")
+        logger.info(f"Schema-driven Pass 1 - Initial generation for tool: {tool_id}")
         pass1_response = call_openai_with_retry(system_prompt, user_prompt)
         
-        # Validate Pass 1 response structure
+        # Validate Pass 1 response
         validated_pass1 = validate_and_fix_response(pass1_response, tool_id)
         
-        # Pass 2: Auto-critique and improvement
-        logger.info(f"Pass 2 - Auto-critique for tool: {tool_id}")
-        critique_prompt = f"""Voici le JSON généré en première passe :
+        # Pass 2: Auto-critique and refinement
+        logger.info(f"Schema-driven Pass 2 - Auto-critique for tool: {tool_id}")
+        critique_prompt = f"""PASS 2 - AUTO-CRITIQUE ET AMÉLIORATION:
 
+JSON généré en Pass 1:
 {json.dumps(validated_pass1, ensure_ascii=False, indent=2)}
 
-CRITIQUE PROFESSIONNELLE REQUISE - Améliore la qualité et le professionnalisme :
+AMÉLIORE selon ces critères:
 
-1. PERSONNALISATION INTELLIGENTE : Intègre de manière naturelle et empathique les données utilisateur dans tous les champs (dates, noms, montants, références). Évite absolument les formulations génériques. Montre une compréhension profonde de la situation personnelle.
+1. PERSONNALISATION MAXIMALE : Intègre tous les éléments du contexte utilisateur (dates, noms, références, montants). Évite les formulations génériques comme "[à compléter]".
 
-2. TONALITÉ HUMAINE ET PROFESSIONNELLE : Équilibre parfaitement un langage juridique précis avec une approche bienveillante et accessible. Améliore les formules de politesse pour qu'elles soient chaleureuses mais respectueuses. Rend la structure argumentative claire et rassurante.
+2. TONALITÉ ADMINISTRATIVE FRANÇAISE : Équilibre professionnel et accessible. Formules de politesse appropriées mais humaines.
 
-3. PRÉCISION JURIDIQUE ACCESSIBLE : Ajoute des références légales spécifiques EXPLIQUÉES simplement, calcule les délais exacts AVEC explications, mentionne les procédures détaillées de manière accessible et rassurante.
+3. STRUCTURE ARGUMENTATIVE : Corps de lettre logique avec introduction, développement factuel, demande claire, conclusion cordiale.
 
-4. EXHAUSTIVITÉ ET ANTICIPATION : Assure-toi que la réponse est SI complète que l'utilisateur n'aura pas besoin de revenir :
-   - resume contient 6-10 étapes détaillées avec estimations temporelles ET conseils pour gérer le stress
-   - lettre intègre parfaitement les données fournies et utilise un vocabulaire professionnel mais accessible
-   - checklist inclut des actions expertes avec délais précis ET conseils pratiques rassurants
-   - mentions contient 4-6 rappels juridiques bienveillants avec références aux recours ET encouragements
+4. EXHAUSTIVITÉ RASSURANTE :
+   - resume: 5-8 étapes détaillées avec conseils encourageants  
+   - checklist: 3-6 actions concrètes avec délais précis
+   - mentions: 2-4 rappels juridiques bienveillants
 
-5. EXCELLENCE RELATIONNELLE : Adopte le ton d'un conseiller expert ET bienveillant qui comprend l'anxiété juridique. Évite les répétitions, utilise des synonymes, structure les paragraphes logiquement, et ajoute des éléments rassurants.
+5. PIÈCES JOINTES PERTINENTES : Liste précise et adaptée au cas d'espèce.
 
-6. QUALITÉ CHATGPT : La réponse doit avoir la qualité conversationnelle de ChatGPT tout en gardant la précision juridique. Anticipe les questions de suivi et les inquiétudes.
-
-Réponds en JSON strict identique mais transformé selon ces critères d'excellence humaine et professionnelle."""
+Réponds avec le JSON amélioré, identique en structure mais optimisé en qualité."""
 
         pass2_response = call_openai_with_retry(system_prompt, critique_prompt)
         
         # Final validation
         final_response = validate_and_fix_response(pass2_response, tool_id)
         
-        duration = time.time() - start_time
-        logger.info(f"Two-pass generation completed - tool: {tool_id}, total duration: {duration:.2f}s")
+        # Render letter using Jinja template
+        template_str = prompt_data['template']
+        rendered_letter = render_letter_with_template(template_str, final_response, payload, tool_id)
         
+        # Replace the generated letter with the rendered template
+        final_response['lettre'] = rendered_letter
+        
+        logger.info(f"Schema-driven generation completed for tool: {tool_id}")
         return final_response
         
     except Exception as e:
-        duration = time.time() - start_time
-        logger.error(f"Two-pass generation failed - tool: {tool_id}, duration: {duration:.2f}s, error: {e}")
-        # Fallback to mock response after max attempts
-        return get_mock_response(tool_id)
+        logger.error(f"Schema-driven generation failed for {tool_id}: {e}")
+        # Fallback to existing mock system
+        return get_mock_response(tool_id, payload)
 
 class GenIn(BaseModel):
     tool_id: str
@@ -1355,41 +1451,14 @@ def generate(in_: GenIn):
     if in_.tool_id not in allowed:
         raise HTTPException(400, "tool_id inconnu")
     
-    # Try OpenAI integration with two-pass system, fallback to mock on any error
-    if openai_client and in_.tool_id in TEMPLATES:
+    # Try schema-driven generation with OpenAI, fallback to mock on any error
+    if openai_client:
         try:
-            # Build user prompt from template
-            template = TEMPLATES[in_.tool_id]
-            user_prompt = template.format(fields=json.dumps(in_.fields, ensure_ascii=False))
-            
-            # Enhanced system prompt with strict JSON requirements
-            enhanced_system_prompt = f"""{SYSTEM_PROMPT}
-
-Tu dois OBLIGATOIREMENT répondre avec un JSON valide contenant exactement ces 4 clés:
-- "resume": array de 4-8 strings concrètes (étapes à suivre)
-- "lettre": objet avec les clés "destinataire_bloc", "objet", "corps", "pj" (array), "signature"
-- "checklist": array de strings (actions claires, verbes à l'infinitif)
-- "mentions": string (2-4 rappels prudents)
-
-Exemple de structure attendue:
-{{
-  "resume": ["Étape 1...", "Étape 2...", "Étape 3...", "Étape 4..."],
-  "lettre": {{
-    "destinataire_bloc": "Service\\nAdresse\\nVille",
-    "objet": "Objet du courrier",
-    "corps": "Corps de la lettre en français administratif...",
-    "pj": ["Pièce 1", "Pièce 2"],
-    "signature": "Signature avec nom, adresse, date"
-  }},
-  "checklist": ["Vérifier...", "Conserver...", "Respecter le délai de..."],
-  "mentions": "Aide automatisée – ne remplace pas un conseil d'avocat. Délais légaux à respecter."
-}}"""
-            
-            # Use two-pass generation system
-            return generate_with_two_passes(enhanced_system_prompt, user_prompt, in_.tool_id)
+            # Use new schema-driven approach
+            return generate_with_schema_driven_approach(in_.tool_id, in_.fields)
             
         except Exception as e:
-            logger.error(f"Generation failed for tool {in_.tool_id}: {e}")
+            logger.error(f"Schema-driven generation failed for tool {in_.tool_id}: {e}")
     
     # Fallback to mock response
     logger.info(f"Using mock response for tool: {in_.tool_id}")
