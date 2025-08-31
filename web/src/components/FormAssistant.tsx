@@ -70,6 +70,11 @@ export function FormAssistant({
         tool_id: toolId,
         messages: newMessages,
         current_form_values: currentValues
+      }, {
+        timeout: 30000, // 30 seconds timeout
+        headers: {
+          'Content-Type': 'application/json'
+        }
       })
 
       const assistantMessage: ChatMessage = {
@@ -84,12 +89,23 @@ export function FormAssistant({
         onFieldSuggestion(response.data.suggested_fields)
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending message:', error)
+      
+      let errorContent = 'Désolé, j\'ai rencontré un problème technique. Pouvez-vous reformuler votre question ?'
+      
+      // Enhanced network error handling for chat
+      if (error.code === 'NETWORK_ERROR' || error.code === 'ERR_NETWORK') {
+        errorContent = 'Erreur de connexion. Vérifiez votre connexion internet et réessayez.'
+      } else if (error.response?.status === 0) {
+        errorContent = 'Impossible de joindre le serveur. Vérifiez votre connexion internet.'
+      } else if (error.response?.status >= 500) {
+        errorContent = 'Le serveur rencontre des difficultés. Veuillez réessayer dans quelques instants.'
+      }
       
       const errorMessage: ChatMessage = {
         role: 'assistant',
-        content: 'Désolé, j\'ai rencontré un problème technique. Pouvez-vous reformuler votre question ?'
+        content: errorContent
       }
       setMessages([...newMessages, errorMessage])
     } finally {
