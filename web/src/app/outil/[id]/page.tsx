@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import Ajv from 'ajv'
+import Link from 'next/link'
 
 // Type definitions
 interface APIResponse {
@@ -55,9 +56,14 @@ function FormField({
 
   if (fieldDef.type === 'object') {
     return (
-      <fieldset className="border border-gray-300 rounded-lg p-4 mb-4">
-        <legend className="text-sm font-medium text-gray-700 px-2">{label}</legend>
-        <div className="space-y-3">
+      <fieldset className="fieldset-modern">
+        <legend className="text-lg font-bold text-gray-800 px-3 bg-white">
+          <div className="flex items-center">
+            <span className="mr-2">👤</span>
+            {label}
+          </div>
+        </legend>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
           {Object.entries(fieldDef.properties || {}).map(([subKey, subDef]: any) => (
             <FormField
               key={subKey}
@@ -75,9 +81,7 @@ function FormField({
   }
 
   let inputElement
-  const baseClasses = `w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-    error ? 'border-red-500' : 'border-gray-300'
-  }`
+  const baseClasses = `form-field ${error ? 'form-field-error' : ''}`
 
   if (fieldDef.enum) {
     inputElement = (
@@ -86,7 +90,7 @@ function FormField({
         onChange={e => onChange(e.target.value)}
         className={baseClasses}
       >
-        <option value="">Choisir...</option>
+        <option value="">Choisir une option...</option>
         {fieldDef.enum.map((option: string) => (
           <option key={option} value={option}>{option}</option>
         ))}
@@ -94,14 +98,14 @@ function FormField({
     )
   } else if (fieldDef.type === 'boolean') {
     inputElement = (
-      <label className="flex items-center space-x-2">
+      <label className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl border-2 border-gray-200 hover:border-blue-300 transition-colors cursor-pointer">
         <input
           type="checkbox"
           checked={value || false}
           onChange={e => onChange(e.target.checked)}
-          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
         />
-        <span className="text-sm text-gray-600">Oui</span>
+        <span className="text-gray-700 font-medium">Oui</span>
       </label>
     )
   } else if (fieldDef.type === 'number' || fieldDef.type === 'integer') {
@@ -131,7 +135,7 @@ function FormField({
         onChange={e => onChange(e.target.value)}
         placeholder={fieldDef.description || ''}
         rows={4}
-        className={baseClasses}
+        className={`${baseClasses} resize-none`}
       />
     )
   } else {
@@ -147,31 +151,38 @@ function FormField({
   }
 
   return (
-    <div className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 mb-1">
+    <div className="space-y-2">
+      <label className="form-label">
         {label}
         {isRequired && <span className="text-red-500 ml-1">*</span>}
       </label>
       {inputElement}
       {error && (
-        <p className="mt-1 text-sm text-red-600">{error}</p>
+        <div className="flex items-center text-red-600 text-sm">
+          <span className="mr-1">⚠️</span>
+          {error}
+        </div>
       )}
     </div>
   )
 }
 
-// Toast component for error notifications
-function Toast({ message, onClose }: { message: string; onClose: () => void }) {
+// Toast component for notifications
+function Toast({ message, onClose, type = 'error' }: { message: string; onClose: () => void; type?: 'error' | 'success' }) {
   useEffect(() => {
     const timer = setTimeout(onClose, 5000)
     return () => clearTimeout(timer)
   }, [onClose])
 
+  const bgColor = type === 'error' ? 'bg-red-500' : 'bg-green-500'
+  const icon = type === 'error' ? '❌' : '✅'
+
   return (
-    <div className="fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-md shadow-lg z-50">
-      <div className="flex items-center space-x-2">
-        <span>{message}</span>
-        <button onClick={onClose} className="text-white hover:text-gray-200">
+    <div className={`fixed top-4 right-4 ${bgColor} text-white px-6 py-4 rounded-xl shadow-lg z-50 max-w-md`}>
+      <div className="flex items-center space-x-3">
+        <span className="text-lg">{icon}</span>
+        <span className="font-medium">{message}</span>
+        <button onClick={onClose} className="text-white hover:text-gray-200 ml-2 text-xl">
           ×
         </button>
       </div>
@@ -180,11 +191,16 @@ function Toast({ message, onClose }: { message: string; onClose: () => void }) {
 }
 
 // Response panel component
-function ResponsePanel({ title, children }: { title: string; children: React.ReactNode }) {
+function ResponsePanel({ title, children, icon }: { title: string; children: React.ReactNode; icon?: string }) {
   return (
-    <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
-      <h2 className="text-xl font-semibold text-gray-800 mb-4">{title}</h2>
-      {children}
+    <div className="card-modern">
+      <div className="p-8">
+        <div className="flex items-center mb-6">
+          {icon && <span className="text-3xl mr-3">{icon}</span>}
+          <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
+        </div>
+        {children}
+      </div>
     </div>
   )
 }
@@ -198,6 +214,7 @@ export default function Page({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
   const [toastMessage, setToastMessage] = useState<string>('')
+  const [toastType, setToastType] = useState<'error' | 'success'>('error')
   
   const API = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'
 
@@ -205,7 +222,10 @@ export default function Page({ params }: { params: { id: string } }) {
     fetch(`/schemas/${id}.json`)
       .then(r => r.json())
       .then(setSchema)
-      .catch(() => setToastMessage('Erreur lors du chargement du schéma'))
+      .catch(() => {
+        setToastMessage('Erreur lors du chargement du schéma')
+        setToastType('error')
+      })
   }, [id])
 
   const validateForm = (): boolean => {
@@ -244,6 +264,7 @@ export default function Page({ params }: { params: { id: string } }) {
     
     if (!validateForm()) {
       setToastMessage('Veuillez corriger les erreurs dans le formulaire')
+      setToastType('error')
       return
     }
 
@@ -251,8 +272,11 @@ export default function Page({ params }: { params: { id: string } }) {
     try {
       const response = await axios.post(`${API}/generate`, { tool_id: id, fields: values })
       setResp(response.data)
+      setToastMessage('Document généré avec succès !')
+      setToastType('success')
     } catch (error) {
       setToastMessage('Erreur lors de la génération. Veuillez réessayer.')
+      setToastType('error')
       console.error('API Error:', error)
     } finally {
       setLoading(false)
@@ -263,8 +287,10 @@ export default function Page({ params }: { params: { id: string } }) {
     try {
       await navigator.clipboard.writeText(text)
       setToastMessage('Texte copié dans le presse-papiers !')
+      setToastType('success')
     } catch (error) {
       setToastMessage('Erreur lors de la copie')
+      setToastType('error')
     }
   }
 
@@ -296,104 +322,141 @@ ${lettre.signature}`
 
   if (!schema) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="page-container flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Chargement…</p>
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-xl text-gray-600 font-medium">Chargement de l&apos;outil...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto max-w-3xl px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-8">{schema.title}</h1>
+    <div className="page-container">
+      <div className="content-container">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <Link href="/" className="btn-secondary flex items-center">
+            <span className="mr-2">←</span>
+            Retour aux outils
+          </Link>
+          <div className="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-medium">
+            <span className="mr-2">📄</span>
+            Générateur automatique
+          </div>
+        </div>
+
+        <div className="text-center mb-12">
+          <h1 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+            {schema.title}
+          </h1>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            Remplissez le formulaire ci-dessous pour générer votre document personnalisé
+          </p>
+        </div>
         
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-6 mb-8">
-          {Object.entries(schema.properties).map(([key, def]: any) => (
-            <FormField
-              key={key}
-              fieldKey={key}
-              fieldDef={def}
-              value={values[key]}
-              onChange={(value) => setValues((prev: any) => ({ ...prev, [key]: value }))}
-              errors={errors}
-            />
-          ))}
-          
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
-              loading
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
-            } text-white`}
-          >
-            {loading ? (
-              <div className="flex items-center justify-center space-x-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                <span>Génération en cours...</span>
-              </div>
-            ) : (
-              'Générer'
-            )}
-          </button>
+        <form onSubmit={handleSubmit} className="card-modern mb-12">
+          <div className="p-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-8 flex items-center">
+              <span className="mr-3">📝</span>
+              Informations requises
+            </h2>
+            
+            <div className="space-y-8">
+              {Object.entries(schema.properties).map(([key, def]: any) => (
+                <FormField
+                  key={key}
+                  fieldKey={key}
+                  fieldDef={def}
+                  value={values[key]}
+                  onChange={(value) => setValues((prev: any) => ({ ...prev, [key]: value }))}
+                  errors={errors}
+                />
+              ))}
+            </div>
+            
+            <div className="mt-10 pt-8 border-t border-gray-200">
+              <button
+                type="submit"
+                disabled={loading}
+                className={`w-full py-4 px-8 rounded-2xl font-bold text-lg transition-all duration-300 ${
+                  loading
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'btn-primary hover:shadow-2xl'
+                }`}
+              >
+                {loading ? (
+                  <div className="flex items-center justify-center space-x-3">
+                    <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Génération en cours...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center space-x-3">
+                    <span>⚡</span>
+                    <span>Générer mon document</span>
+                  </div>
+                )}
+              </button>
+            </div>
+          </div>
         </form>
 
         {resp && (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {/* Résumé Panel */}
-            <ResponsePanel title="Résumé">
-              <ul className="space-y-2">
+            <ResponsePanel title="Résumé des étapes" icon="📋">
+              <div className="space-y-4">
                 {resp.resume.map((item, i) => (
-                  <li key={i} className="flex items-start space-x-2">
-                    <span className="flex-shrink-0 w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium mt-0.5">
+                  <div key={i} className="flex items-start space-x-4 p-4 bg-blue-50 rounded-xl">
+                    <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
                       {i + 1}
-                    </span>
-                    <span className="text-gray-700">{item}</span>
-                  </li>
+                    </div>
+                    <span className="text-gray-800 font-medium flex-1">{item}</span>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </ResponsePanel>
 
             {/* Lettre Panel */}
-            <ResponsePanel title="Lettre">
-              <div className="bg-gray-50 rounded-md p-4 font-mono text-sm whitespace-pre-wrap mb-4">
+            <ResponsePanel title="Votre lettre" icon="📄">
+              <div className="bg-gray-50 rounded-2xl p-6 font-mono text-sm whitespace-pre-wrap mb-6 border-2 border-gray-200">
                 {generateLetterText(resp.lettre)}
               </div>
-              <div className="flex space-x-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <button
                   onClick={() => copyToClipboard(generateLetterText(resp.lettre))}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md transition-colors"
+                  className="btn-secondary flex items-center justify-center space-x-2"
                 >
-                  Copier le texte
+                  <span>📋</span>
+                  <span>Copier le texte</span>
                 </button>
                 <button
                   onClick={() => downloadAsText(generateLetterText(resp.lettre), `lettre-${id}.txt`)}
-                  className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-md transition-colors"
+                  className="btn-primary flex items-center justify-center space-x-2"
                 >
-                  Télécharger .txt
+                  <span>💾</span>
+                  <span>Télécharger (.txt)</span>
                 </button>
               </div>
             </ResponsePanel>
 
             {/* Checklist Panel */}
-            <ResponsePanel title="Checklist">
-              <ul className="space-y-2">
+            <ResponsePanel title="Checklist à suivre" icon="✅">
+              <div className="space-y-3">
                 {resp.checklist.map((item, i) => (
-                  <li key={i} className="flex items-start space-x-2">
-                    <span className="flex-shrink-0 w-4 h-4 border-2 border-green-500 rounded mt-1"></span>
-                    <span className="text-gray-700">{item}</span>
-                  </li>
+                  <div key={i} className="flex items-start space-x-3 p-3 bg-green-50 rounded-xl">
+                    <div className="flex-shrink-0 w-6 h-6 border-2 border-green-500 rounded-md mt-0.5"></div>
+                    <span className="text-gray-800">{item}</span>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </ResponsePanel>
 
             {/* Mentions Panel */}
-            <ResponsePanel title="Mentions">
-              <p className="text-sm text-gray-600 italic">{resp.mentions}</p>
+            <ResponsePanel title="Informations importantes" icon="⚠️">
+              <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-6">
+                <p className="text-amber-800 font-medium">{resp.mentions}</p>
+              </div>
             </ResponsePanel>
           </div>
         )}
@@ -401,6 +464,7 @@ ${lettre.signature}`
         {toastMessage && (
           <Toast 
             message={toastMessage} 
+            type={toastType}
             onClose={() => setToastMessage('')} 
           />
         )}
