@@ -22,12 +22,18 @@ curl -X POST http://127.0.0.1:8000/generate \
   -d '{
     "tool_id": "amendes",
     "fields": {
-      "montant": "90",
-      "date": "2024-01-15",
-      "numero": "12345",
-      "motif": "Excès de vitesse",
-      "nom": "Dupont",
-      "prenom": "Jean"
+      "type_amende": "vitesse",
+      "date_infraction": "15/01/2024",
+      "lieu": "Avenue de la République, Caen",
+      "numero_process_verbal": "14RD001234",
+      "plaque": "AB-123-CD",
+      "motif_contestation": "Feu rouge défaillant",
+      "elements_preuve": "Photos du feu, témoins présents",
+      "identite": {
+        "nom": "Dupont",
+        "prenom": "Jean",
+        "adresse": "123 rue des Lilas, 14000 Caen"
+      }
     }
   }'
 ```
