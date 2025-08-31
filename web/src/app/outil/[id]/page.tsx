@@ -9,6 +9,7 @@ import { Button } from '../../../components/ui/Button'
 import { Card } from '../../../components/ui/Card'
 import { Field, Input, Textarea, Select } from '../../../components/ui/Field'
 import { Toast as ToastComponent } from '../../../components/ui/Toast'
+import { Copy, Download, ArrowLeft, FileText } from 'lucide-react'
 
 // Type definitions
 interface APIResponse {
@@ -489,7 +490,7 @@ ${lettre.signature}`
                 onClick={() => copyToClipboard(generateAllText(resp))}
                 className="flex items-center justify-center space-x-2 flex-1"
               >
-                <span>📋</span>
+                <Copy className="w-4 h-4" />
                 <span>Copier tout</span>
               </Button>
               <Button
@@ -497,7 +498,7 @@ ${lettre.signature}`
                 onClick={() => downloadAsText(generateAllText(resp), `document-${id}.txt`)}
                 className="flex items-center justify-center space-x-2 flex-1"
               >
-                <span>💾</span>
+                <Download className="w-4 h-4" />
                 <span>Télécharger .txt</span>
               </Button>
             </div>
@@ -523,20 +524,22 @@ ${lettre.signature}`
                 {generateLetterText(resp.lettre)}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <button
+                <Button
+                  variant="secondary"
                   onClick={() => copyToClipboard(generateLetterText(resp.lettre))}
-                  className="btn-secondary flex items-center justify-center space-x-2"
+                  className="flex items-center justify-center space-x-2"
                 >
-                  <span>📋</span>
-                  <span>Copier le texte</span>
-                </button>
-                <button
+                  <Copy className="w-4 h-4" />
+                  <span>Copier</span>
+                </Button>
+                <Button
+                  variant="primary"
                   onClick={() => downloadAsText(generateLetterText(resp.lettre), `lettre-${id}.txt`)}
-                  className="btn-primary flex items-center justify-center space-x-2"
+                  className="flex items-center justify-center space-x-2"
                 >
-                  <span>💾</span>
-                  <span>Télécharger (.txt)</span>
-                </button>
+                  <Download className="w-4 h-4" />
+                  <span>Télécharger .txt</span>
+                </Button>
               </div>
             </ResponsePanel>
 

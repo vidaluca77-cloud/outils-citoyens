@@ -24,14 +24,14 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
 
 export function Field({ label, error, required, children, className }: FieldProps) {
   return (
-    <div className={cn('space-y-2', className)}>
-      <label className="block text-sm font-medium text-gray-700">
+    <div className={cn('stack', className)}>
+      <label className="block text-sm font-medium text-foreground">
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
+        {required && <span className="text-destructive ml-1">*</span>}
       </label>
       {children}
       {error && (
-        <p className="text-sm text-red-600 flex items-center">
+        <p className="text-sm text-destructive flex items-center">
           <span className="mr-1">⚠️</span>
           {error}
         </p>
@@ -44,8 +44,8 @@ export function Input({ className, error, ...props }: InputProps) {
   return (
     <input
       className={cn(
-        'w-full px-4 py-3 border rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200',
-        error ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400',
+        'w-full px-3 py-2 bg-background border border-input rounded-md text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+        error && 'border-destructive',
         className
       )}
       {...props}
@@ -57,8 +57,8 @@ export function Textarea({ className, error, ...props }: TextareaProps) {
   return (
     <textarea
       className={cn(
-        'w-full px-4 py-3 border rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none',
-        error ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400',
+        'w-full px-3 py-2 bg-background border border-input rounded-md text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none',
+        error && 'border-destructive',
         className
       )}
       rows={4}
@@ -71,8 +71,8 @@ export function Select({ className, error, options, children, ...props }: Select
   return (
     <select
       className={cn(
-        'w-full px-4 py-3 border rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white',
-        error ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400',
+        'w-full px-3 py-2 bg-background border border-input rounded-md text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+        error && 'border-destructive',
         className
       )}
       {...props}
