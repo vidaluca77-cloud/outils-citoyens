@@ -40,11 +40,46 @@ class Output(BaseModel):
     checklist: List[str]
     mentions: str
 
-# OpenAI setup
+# OpenAI setup with validation
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 openai_client = None
+
+def validate_openai_key_format(api_key: str) -> bool:
+    """Basic validation of OpenAI API key format"""
+    if not api_key or not isinstance(api_key, str):
+        return False
+    
+    # OpenAI keys should start with sk- and have reasonable length
+    if not api_key.startswith("sk-") or len(api_key) < 20:
+        return False
+    
+    return True
+
+def test_openai_connectivity() -> bool:
+    """Test OpenAI connectivity with a quick call"""
+    if not openai_client:
+        return False
+    
+    try:
+        # Make a minimal test call with very short timeout
+        openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": "test"}],
+            max_tokens=1,
+            timeout=3  # Very short timeout for quick failure
+        )
+        return True
+    except Exception as e:
+        logger.warning(f"OpenAI connectivity test failed: {e}")
+        return False
+
 if OPENAI_API_KEY:
-    openai_client = OpenAI(api_key=OPENAI_API_KEY)
+    if validate_openai_key_format(OPENAI_API_KEY):
+        openai_client = OpenAI(api_key=OPENAI_API_KEY)
+        logger.info("OpenAI client initialized with valid key format")
+    else:
+        logger.warning("Invalid OpenAI API key format detected, using mock responses only")
+        openai_client = None
 
 # Load system prompt and templates
 def load_system_prompt():
@@ -1301,6 +1336,10 @@ def call_openai_with_retry(system_prompt: str, user_prompt: str, max_retries: in
                 continue
             logger.error("Max retries exceeded due to rate limiting")
             raise
+        except (openai.APIConnectionError, openai.AuthenticationError) as e:
+            # Connection error or auth error - likely invalid key, fail fast
+            logger.error(f"Authentication or connection error (likely invalid key): {e}")
+            raise
         except (openai.APITimeoutError, openai.InternalServerError, openai.APIError) as e:
             # Timeout, 5xx errors
             if attempt < max_retries - 1:
@@ -1438,7 +1477,9 @@ class GenIn(BaseModel):
     fields: dict
 
 @app.get("/health")
-def health(): return {"ok": True}
+def health(): 
+    openai_status = "available" if openai_client else "unavailable"
+    return {"ok": True, "openai": openai_status}
 
 @app.post("/generate")
 def generate(in_: GenIn):

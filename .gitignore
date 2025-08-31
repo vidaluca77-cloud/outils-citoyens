@@ -48,3 +48,4 @@ Thumbs.db
 
 # Temporary files
 /tmp/__pycache__/
+test_fix.py
