@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Stop Loyers Abusifs",
+  "type": "object",
+  "properties": {
+    "adresse_complete": {
+      "type": "string"
+    },
+    "surface_m2": {
+      "type": "number"
+    },
+    "nb_pieces": {
+      "type": "integer"
+    },
+    "annee_construction": {
+      "type": "integer"
+    },
+    "meuble": {
+      "type": "boolean"
+    },
+    "loyer_hc": {
+      "type": "number"
+    },
+    "charges": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "adresse_complete",
+    "surface_m2",
+    "nb_pieces",
+    "meuble",
+    "loyer_hc"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Mon Aide Cachée",
+  "type": "object",
+  "properties": {
+    "composition_foyer": {
+      "type": "string",
+      "description": "ex: 2 adultes, 1 enfant"
+    },
+    "situation_pro": {
+      "type": "string",
+      "enum": [
+        "CDI",
+        "CDD",
+        "AE",
+        "chomage",
+        "etudiant",
+        "retraite",
+        "autre"
+      ]
+    },
+    "revenu_mensuel_net": {
+      "type": "number"
+    },
+    "logement": {
+      "type": "string",
+      "enum": [
+        "locataire",
+        "proprietaire",
+        "heberge"
+      ]
+    },
+    "code_postal": {
+      "type": "string"
+    },
+    "sante_couverture": {
+      "type": "string",
+      "enum": [
+        "aucune",
+        "mutuelle",
+        "css",
+        "ame"
+      ]
+    }
+  },
+  "required": [
+    "composition_foyer",
+    "revenu_mensuel_net",
+    "logement",
+    "code_postal"
+  ],
+  "additionalProperties": false
+}

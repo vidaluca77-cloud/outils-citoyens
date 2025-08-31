@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Décodeur d’Administration",
+  "type": "object",
+  "properties": {
+    "courrier_texte": {
+      "type": "string"
+    },
+    "expediteur": {
+      "type": "string",
+      "enum": [
+        "CAF",
+        "Impots",
+        "Prefecture",
+        "Autre"
+      ]
+    },
+    "deadline_si_indiquee": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "courrier_texte",
+    "expediteur"
+  ],
+  "additionalProperties": false
+}

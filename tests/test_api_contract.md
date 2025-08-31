@@ -1,0 +1,2 @@
+- Démarrer l’API: `uvicorn api.main:app --reload --port 8000`
+- POST /generate avec `tool_id=amendes` → réponse contient les 4 clés.

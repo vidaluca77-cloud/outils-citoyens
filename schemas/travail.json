@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Mes Droits au Travail",
+  "type": "object",
+  "properties": {
+    "situation": {
+      "type": "string",
+      "description": "licenciement, heures sup, harcèlement…"
+    },
+    "contrat": {
+      "type": "string",
+      "enum": [
+        "CDI",
+        "CDD",
+        "Interim",
+        "Autre"
+      ]
+    },
+    "anciennete_mois": {
+      "type": "integer"
+    },
+    "elements_preuve": {
+      "type": "string"
+    },
+    "identite": {
+      "type": "object",
+      "properties": {
+        "nom": {
+          "type": "string"
+        },
+        "prenom": {
+          "type": "string"
+        },
+        "adresse": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "nom",
+        "prenom",
+        "adresse"
+      ]
+    },
+    "employeur": {
+      "type": "object",
+      "properties": {
+        "raison_sociale": {
+          "type": "string"
+        },
+        "adresse": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "raison_sociale",
+        "adresse"
+      ]
+    }
+  },
+  "required": [
+    "situation",
+    "contrat",
+    "identite",
+    "employeur"
+  ],
+  "additionalProperties": false
+}

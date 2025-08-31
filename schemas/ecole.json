@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Je Me Défends à l’École",
+  "type": "object",
+  "properties": {
+    "niveau": {
+      "type": "string",
+      "enum": [
+        "college",
+        "lycee"
+      ]
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "harcelement",
+        "violence",
+        "autre"
+      ]
+    },
+    "faits": {
+      "type": "string"
+    },
+    "etablissement": {
+      "type": "string"
+    },
+    "parents_contacts": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "niveau",
+    "type",
+    "faits",
+    "etablissement"
+  ],
+  "additionalProperties": false
+}

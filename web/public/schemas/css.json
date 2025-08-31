@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Complémentaire Santé Solidaire",
+  "type": "object",
+  "properties": {
+    "revenu_mensuel_net": {
+      "type": "number"
+    },
+    "foyer": {
+      "type": "integer"
+    },
+    "age": {
+      "type": "integer"
+    },
+    "statut": {
+      "type": "string",
+      "enum": [
+        "actif",
+        "chomeur",
+        "etudiant",
+        "retraite"
+      ]
+    },
+    "couverture_actuelle": {
+      "type": "string",
+      "enum": [
+        "aucune",
+        "mutuelle",
+        "css",
+        "ame"
+      ]
+    }
+  },
+  "required": [
+    "revenu_mensuel_net",
+    "foyer"
+  ],
+  "additionalProperties": false
+}

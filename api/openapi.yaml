@@ -1,0 +1,49 @@
+openapi: 3.0.3
+info:
+  title: Outils Citoyens API
+  version: 0.1.0
+paths:
+  /health:
+    get:
+      responses:
+        '200':
+          description: ok
+  /generate:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tool_id, fields]
+              properties:
+                tool_id: { type: string }
+                fields: { type: object }
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [resume, lettre, checklist, mentions]
+                properties:
+                  resume:
+                    type: array
+                    items: { type: string }
+                  lettre:
+                    type: object
+                    properties:
+                      destinataire_bloc: { type: string }
+                      objet: { type: string }
+                      corps: { type: string }
+                      pj:
+                        type: array
+                        items: { type: string }
+                      signature: { type: string }
+                  checklist:
+                    type: array
+                    items: { type: string }
+                  mentions:
+                    type: string

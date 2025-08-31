@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Expulsions/Coupures Illégales Stop",
+  "type": "object",
+  "properties": {
+    "situation": {
+      "type": "string",
+      "description": "coupure eau/élec/gaz, menace expulsion…"
+    },
+    "statut": {
+      "type": "string",
+      "enum": [
+        "locataire",
+        "proprietaire"
+      ]
+    },
+    "dates": {
+      "type": "string"
+    },
+    "preuves": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "situation",
+    "statut"
+  ],
+  "additionalProperties": false
+}

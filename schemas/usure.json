@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Anti-Usure Bancaire",
+  "type": "object",
+  "properties": {
+    "type_credit": {
+      "type": "string",
+      "enum": [
+        "conso",
+        "auto",
+        "renouvelable",
+        "immo"
+      ]
+    },
+    "taux_annuel": {
+      "type": "number"
+    },
+    "assurance_emprunteur": {
+      "type": "number"
+    },
+    "frais": {
+      "type": "number"
+    },
+    "date_offre": {
+      "type": "string",
+      "description": "JJ/MM/AAAA"
+    }
+  },
+  "required": [
+    "type_credit",
+    "taux_annuel",
+    "date_offre"
+  ],
+  "additionalProperties": false
+}

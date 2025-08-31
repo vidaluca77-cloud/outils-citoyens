@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Facture Énergie Juste",
+  "type": "object",
+  "properties": {
+    "fournisseur": {
+      "type": "string"
+    },
+    "offre": {
+      "type": "string",
+      "enum": [
+        "reglemente",
+        "marche"
+      ]
+    },
+    "conso_kwh": {
+      "type": "number"
+    },
+    "montant_facture": {
+      "type": "number"
+    },
+    "date": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "fournisseur",
+    "montant_facture"
+  ],
+  "additionalProperties": false
+}

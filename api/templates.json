@@ -1,0 +1,14 @@
+{
+  "amendes": "Contexte: contestation d’amende. Données: {fields}",
+  "aides": "Contexte: aides sociales potentielles. Données: {fields}",
+  "loyers": "Contexte: encadrement des loyers. Données: {fields}",
+  "travail": "Contexte: droits du travail. Données: {fields}",
+  "sante": "Contexte: accès aux soins. Données: {fields}",
+  "caf": "Contexte: réponse à un courrier CAF. Données: {fields}",
+  "usure": "Contexte: taux d’usure bancaire. Données: {fields}",
+  "energie": "Contexte: facture énergie. Données: {fields}",
+  "expulsions": "Contexte: coupures/expulsions illégales. Données: {fields}",
+  "css": "Contexte: éligibilité CSS. Données: {fields}",
+  "ecole": "Contexte: harcèlement scolaire. Données: {fields}",
+  "decodeur": "Contexte: traduction courrier administratif. Données: {fields}"
+}

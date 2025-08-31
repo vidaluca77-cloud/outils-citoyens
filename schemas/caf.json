@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Mon Dossier CAF Simplifié",
+  "type": "object",
+  "properties": {
+    "type_courrier_caf": {
+      "type": "string",
+      "description": "indu, demande de pièces, suspension…"
+    },
+    "resume_courrier": {
+      "type": "string"
+    },
+    "situation": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "type_courrier_caf",
+    "resume_courrier"
+  ],
+  "additionalProperties": false
+}

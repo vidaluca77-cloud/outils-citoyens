@@ -1,0 +1,1 @@
+- Aller sur `/outil/amendes` → formulaire auto depuis `/public/schemas/amendes.json` → clic Générer → affiche résultat.

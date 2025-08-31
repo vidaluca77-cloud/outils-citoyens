@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Contestation d’amende",
+  "type": "object",
+  "properties": {
+    "type_amende": {
+      "type": "string",
+      "enum": [
+        "stationnement",
+        "vitesse",
+        "transports",
+        "autre"
+      ]
+    },
+    "date_infraction": {
+      "type": "string",
+      "description": "JJ/MM/AAAA"
+    },
+    "lieu": {
+      "type": "string"
+    },
+    "numero_process_verbal": {
+      "type": "string"
+    },
+    "plaque": {
+      "type": "string"
+    },
+    "motif_contestation": {
+      "type": "string"
+    },
+    "elements_preuve": {
+      "type": "string",
+      "description": "photos, tickets, témoins…"
+    },
+    "identite": {
+      "type": "object",
+      "properties": {
+        "nom": {
+          "type": "string"
+        },
+        "prenom": {
+          "type": "string"
+        },
+        "adresse": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "nom",
+        "prenom",
+        "adresse"
+      ]
+    }
+  },
+  "required": [
+    "type_amende",
+    "date_infraction",
+    "lieu",
+    "motif_contestation",
+    "identite"
+  ],
+  "additionalProperties": false
+}

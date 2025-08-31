@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Médecin Maintenant",
+  "type": "object",
+  "properties": {
+    "code_postal": {
+      "type": "string"
+    },
+    "couverture": {
+      "type": "string",
+      "enum": [
+        "ameli",
+        "mutuelle",
+        "css",
+        "ame",
+        "aucune"
+      ]
+    },
+    "besoin": {
+      "type": "string",
+      "enum": [
+        "medecin_traitant",
+        "teleconsultation",
+        "urgences"
+      ]
+    }
+  },
+  "required": [
+    "code_postal",
+    "besoin"
+  ],
+  "additionalProperties": false
+}
