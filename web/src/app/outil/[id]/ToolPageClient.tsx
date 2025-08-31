@@ -10,6 +10,7 @@ import { Field, Input, Textarea, Select } from '../../../components/ui/Field'
 import { Toast as ToastComponent } from '../../../components/ui/Toast'
 import { Copy, Download, ArrowLeft, FileText } from 'lucide-react'
 import { ToolFAQ, generateFAQJsonLD } from '../../../components/ToolFAQ'
+import { FormAssistant } from '../../../components/FormAssistant'
 
 // Type definitions
 interface APIResponse {
@@ -163,6 +164,13 @@ export function ToolPageClient({ params }: { params: { id: string } }) {
   const [toastType, setToastType] = useState<'error' | 'success'>('error')
   
   const API = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'
+
+  // Handle form suggestions from AI assistant
+  const handleFieldSuggestion = (suggestedFields: Record<string, any>) => {
+    setValues(prevValues => ({ ...prevValues, ...suggestedFields }))
+    setToastMessage('💡 L\'assistant a prérempli certains champs pour vous')
+    setToastType('success')
+  }
 
   useEffect(() => {
     fetch(`/schemas/${id}.json`)
@@ -501,6 +509,16 @@ ${lettre.signature}`
             message={toastMessage} 
             type={toastType}
             onClose={() => setToastMessage('')} 
+          />
+        )}
+
+        {/* AI Assistant */}
+        {schema && (
+          <FormAssistant
+            toolId={id}
+            currentValues={values}
+            onFieldSuggestion={handleFieldSuggestion}
+            toolTitle={schema.title || id}
           />
         )}
       </div>

@@ -25,6 +25,7 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     tool_id: Optional[str] = None
     messages: List[ChatMessage]
+    current_form_values: Optional[Dict[str, Any]] = None
 
 class ChatResponse(BaseModel):
     answer: str
@@ -38,6 +39,7 @@ Tes rôles principaux :
 2. Poser des questions de précision pour bien cerner ses besoins
 3. Donner des conseils juridiques accessibles et bienveillants
 4. Orienter vers les bons outils et démarches
+5. Aider à remplir les formulaires en expliquant chaque champ
 
 Outils disponibles que tu peux recommander :
 - "amendes" : Contestation d'amende
@@ -60,6 +62,8 @@ Instructions importantes :
 - Garde tes réponses concises mais utiles
 - N'invente jamais d'informations juridiques
 - Encourage l'utilisateur et rassure-le sur ses droits
+- Quand tu aides avec un formulaire, explique clairement chaque champ et pourquoi il est important
+- Suggère des valeurs pour les champs quand tu as suffisamment d'informations
 
 Si tu penses qu'un outil peut aider et que tu as assez d'informations pour préremplir des champs, tu peux suggérer des champs préremplis. Mais ne le fais que si tu es sûr des informations."""
 
@@ -133,12 +137,27 @@ def extract_info_from_conversation(messages: List[ChatMessage], tool_id: str) ->
     
     return suggested_fields if suggested_fields else None
 
-def get_chat_response(messages: List[ChatMessage], tool_id: Optional[str] = None) -> Dict[str, Any]:
+def get_chat_response(messages: List[ChatMessage], tool_id: Optional[str] = None, current_form_values: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Generate chat response using OpenAI or fallback"""
     try:
         if openai_client:
+            # Prepare system prompt with form context
+            system_prompt = CHAT_SYSTEM_PROMPT
+            if tool_id and current_form_values:
+                filled_fields = [k for k, v in current_form_values.items() if v]
+                empty_fields = [k for k, v in current_form_values.items() if not v]
+                
+                system_prompt += f"\n\nContexte du formulaire actuel (outil: {tool_id}):"
+                if filled_fields:
+                    system_prompt += f"\nChamps déjà remplis: {', '.join(filled_fields)}"
+                if empty_fields:
+                    system_prompt += f"\nChamps encore vides: {', '.join(empty_fields)}"
+                system_prompt += "\nTu peux aider l'utilisateur à comprendre et remplir les champs manquants."
+            elif tool_id:
+                system_prompt += f"\n\nL'utilisateur travaille actuellement sur le formulaire pour: {tool_id}. Tu peux l'aider à comprendre et remplir ce formulaire."
+            
             # Prepare messages for OpenAI
-            openai_messages = [{"role": "system", "content": CHAT_SYSTEM_PROMPT}]
+            openai_messages = [{"role": "system", "content": system_prompt}]
             openai_messages.extend([{"role": msg.role, "content": msg.content} for msg in messages])
             
             response = openai_client.chat.completions.create(
@@ -153,9 +172,14 @@ def get_chat_response(messages: List[ChatMessage], tool_id: Optional[str] = None
         else:
             # Fallback response
             user_message = messages[-1].content if messages else ""
-            answer = f"Je comprends votre situation concernant {user_message[:50]}... " \
-                    f"Malheureusement, je ne peux pas accéder à l'IA en ce moment, mais je peux vous aider à identifier l'outil approprié. " \
-                    f"Pouvez-vous me donner plus de détails sur votre problème ?"
+            if tool_id:
+                answer = f"Je vois que vous travaillez sur le formulaire '{tool_id}'. " \
+                        f"Malheureusement, je ne peux pas accéder à l'IA en ce moment, mais je peux vous aider avec des conseils généraux. " \
+                        f"Pouvez-vous me dire sur quel champ vous avez besoin d'aide ?"
+            else:
+                answer = f"Je comprends votre situation concernant {user_message[:50]}... " \
+                        f"Malheureusement, je ne peux pas accéder à l'IA en ce moment, mais je peux vous aider à identifier l'outil approprié. " \
+                        f"Pouvez-vous me donner plus de détails sur votre problème ?"
         
         # Try to extract suggested fields if tool_id is provided
         suggested_fields = None
@@ -182,7 +206,7 @@ async def chat(request: ChatRequest):
             raise HTTPException(status_code=400, detail="Messages cannot be empty")
         
         # Get response from chat logic
-        response_data = get_chat_response(request.messages, request.tool_id)
+        response_data = get_chat_response(request.messages, request.tool_id, request.current_form_values)
         
         return ChatResponse(
             answer=response_data["answer"],
