@@ -1,0 +1,65 @@
+DESTINATAIRE: {% if etablissement %}{{ etablissement }}{% else %}[Nom de l'établissement]{% endif %}
+{% if type_etablissement %}{{ type_etablissement }}{% else %}Établissement scolaire{% endif %}
+{{ adresse_etablissement or "[Adresse de l'établissement]" }}
+{{ code_postal or "[Code postal]" }} {{ ville_etablissement or "[Ville]" }}
+
+OBJET: {% if type_demande %}{{ type_demande|title }}{% else %}Demande relative à la scolarité{% endif %}{% if enfant_nom %} - Élève {{ enfant_nom }}{% endif %}{% if classe %} - Classe {{ classe }}{% endif %}
+
+CORPS:
+{% if destinataire_titre %}{{ destinataire_titre }}{% else %}Madame, Monsieur{% endif %},
+
+{% if type_demande and "inscription" in type_demande.lower() -%}
+Je sollicite l'inscription de {% if enfant_nom %}{{ enfant_nom }}{% else %}mon enfant{% endif %}{% if classe %} en classe de {{ classe }}{% endif %} dans votre établissement pour {% if annee_scolaire %}l'année scolaire {{ annee_scolaire }}{% else %}la prochaine rentrée scolaire{% endif %}.
+
+{% if situation_famille -%}
+Situation familiale : {{ situation_famille }}
+{% endif %}
+
+{% if etablissement_precedent -%}
+Établissement précédent : {{ etablissement_precedent }}
+{% endif %}
+{%- elif type_demande and "certificat" in type_demande.lower() -%}
+Je vous demande de bien vouloir m'établir un certificat de scolarité pour {% if enfant_nom %}{{ enfant_nom }}{% else %}mon enfant{% endif %}{% if classe %}, élève en classe de {{ classe }}{% endif %}.
+
+{% if motif_certificat -%}
+Ce certificat est nécessaire pour : {{ motif_certificat }}
+{% endif %}
+{%- else -%}
+Je vous écris concernant la scolarité de {% if enfant_nom %}{{ enfant_nom }}{% else %}mon enfant{% endif %}{% if classe %}, élève en classe de {{ classe }}{% endif %} dans votre établissement.
+
+{% if objet_demande -%}
+Objet de ma demande : {{ objet_demande }}
+{% endif %}
+{%- endif %}
+
+{% if circonstances_particulieres -%}
+Circonstances particulières : {{ circonstances_particulieres }}
+{% endif %}
+
+{% if urgence and urgence == "oui" -%}
+Cette demande revêt un caractère urgent{% if motif_urgence %} en raison de {{ motif_urgence }}{% endif %}.
+{% endif %}
+
+Je me tiens à votre disposition pour tout complément d'information et vous remercie de l'attention que vous porterez à cette demande.
+
+Je vous prie d'agréer, {% if destinataire_titre %}{{ destinataire_titre }}{% else %}Madame, Monsieur{% endif %}, l'expression de ma considération distinguée.
+
+PIÈCES JOINTES:
+{% for pj in pieces_jointes -%}
+- {{ pj }}
+{% endfor %}
+
+SIGNATURE:
+{% if identite -%}
+{{ identite.prenom }} {{ identite.nom }}
+{% if enfant_nom %}Parent de {{ enfant_nom }}{% endif %}
+{{ identite.adresse }}
+{%- else -%}
+[Votre prénom et nom]
+{% if enfant_nom %}Parent de {{ enfant_nom }}{% endif %}
+[Votre adresse complète]
+{%- endif %}
+Téléphone : [Votre numéro]
+Email : [Votre email]
+
+Fait à {{ ville_signature or "[Ville]" }}, le {{ date_courrier or "[Date]" }}

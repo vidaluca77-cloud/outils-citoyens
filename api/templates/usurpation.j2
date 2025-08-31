@@ -1,0 +1,44 @@
+DESTINATAIRE: {{ banque or "[Nom de la banque]" }}
+Service Juridique - Contentieux
+{{ adresse_banque or "[Adresse de l'agence ou siège]" }}
+{{ code_postal or "[Code postal]" }} {{ ville_banque or "[Ville]" }}
+
+OBJET: Contestation taux d'usure - {{ type_credit or "Crédit" }}{% if date_signature %} du {{ date_signature }}{% endif %}{% if taux_pratique %} - TEG {{ taux_pratique }}%{% endif %}
+
+CORPS:
+Madame, Monsieur,
+
+Par la présente, je conteste formellement le taux d'intérêt appliqué au {{ type_credit or "crédit" }} que j'ai souscrit auprès de votre établissement {{ banque or "[Nom de la banque]" }}{% if date_signature %} le {{ date_signature }}{% endif %}{% if montant_pret %} pour un montant de {{ montant_pret }}€{% endif %}.
+
+Le taux effectif global (TEG) de {{ taux_pratique or "[Taux pratiqué]" }}% appliqué à ce crédit dépasse manifestement le taux d'usure légal fixé par la Banque de France{% if taux_usure_legal %} (actuellement {{ taux_usure_legal }}% pour ce type de crédit){% endif %}.
+
+Cette situation constitue une infraction à l'article L314-6 du Code de la consommation et rend le contrat de crédit partiellement nul.
+
+{% if calcul_depassement -%}
+Calcul du dépassement : {{ calcul_depassement }}
+{% endif %}
+
+Je vous demande de procéder immédiatement à :
+- La rectification de ce taux au niveau légal maximum
+- Le remboursement des intérêts indûment perçus
+- Le recalcul de l'échéancier avec le taux légal
+
+Dans l'attente de votre réponse sous 30 jours, je vous prie d'agréer, Madame, Monsieur, l'expression de ma considération distinguée.
+
+PIÈCES JOINTES:
+{% for pj in pieces_jointes -%}
+- {{ pj }}
+{% endfor %}
+
+SIGNATURE:
+{% if identite -%}
+{{ identite.prenom }} {{ identite.nom }}
+{{ identite.adresse }}
+{%- else -%}
+[Votre prénom et nom]
+[Votre adresse complète]
+{%- endif %}
+{% if numero_compte %}N° de compte : {{ numero_compte }}{% endif %}
+Téléphone : [Votre numéro]
+
+Fait à {{ ville_signature or "[Ville]" }}, le {{ date_courrier or "[Date]" }}
