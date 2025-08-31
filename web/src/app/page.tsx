@@ -48,6 +48,28 @@ export default function Page() {
           </div>
         </div>
         
+        {/* Assistant CTA */}
+        <div className="mb-12">
+          <Link 
+            href="/assistant"
+            className="block bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white p-8 rounded-3xl shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
+          >
+            <div className="flex items-center justify-center text-center">
+              <div className="text-4xl mr-4">🤖</div>
+              <div>
+                <h2 className="text-2xl font-bold mb-2">Assistant Juridique Conversationnel</h2>
+                <p className="text-lg opacity-90">
+                  Discutez avec notre IA pour identifier l&apos;outil adapté à votre situation
+                </p>
+                <div className="inline-flex items-center mt-3 text-lg font-medium">
+                  <span className="mr-2">Commencer la conversation</span>
+                  <span className="transform group-hover:translate-x-1 transition-transform">→</span>
+                </div>
+              </div>
+            </div>
+          </Link>
+        </div>
+        
         {/* Tools Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
           {tools.map((tool, index) => (

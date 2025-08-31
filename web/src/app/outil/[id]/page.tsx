@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import axios from 'axios'
 import Ajv from 'ajv'
 import Link from 'next/link'
@@ -209,6 +210,7 @@ function ResponsePanel({ title, children, icon }: { title: string; children: Rea
 // Main page component
 export default function Page({ params }: { params: { id: string } }) {
   const { id } = params
+  const searchParams = useSearchParams()
   const [schema, setSchema] = useState<any>(null)
   const [values, setValues] = useState<any>({})
   const [resp, setResp] = useState<APIResponse | null>(null)
@@ -228,6 +230,23 @@ export default function Page({ params }: { params: { id: string } }) {
         setToastType('error')
       })
   }, [id])
+
+  // Handle prefill from query parameters
+  useEffect(() => {
+    const prefillParam = searchParams.get('prefill')
+    if (prefillParam) {
+      try {
+        const prefillData = JSON.parse(decodeURIComponent(prefillParam))
+        setValues(prevValues => ({ ...prevValues, ...prefillData }))
+        setToastMessage('Formulaire prérempli avec les informations de votre conversation')
+        setToastType('success')
+      } catch (error) {
+        console.error('Error parsing prefill data:', error)
+        setToastMessage('Erreur lors du préremplissage du formulaire')
+        setToastType('error')
+      }
+    }
+  }, [searchParams])
 
   const validateForm = (): boolean => {
     if (!schema) return false

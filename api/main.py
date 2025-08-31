@@ -16,6 +16,10 @@ app.add_middleware(
     allow_origins=["*"], allow_methods=["*"], allow_headers=["*"], allow_credentials=True
 )
 
+# Include chat router
+from .chat import router as chat_router
+app.include_router(chat_router)
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
