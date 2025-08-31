@@ -38,18 +38,19 @@ def test_amendes_feu_rouge_masque():
     assert "mentions" in result
     
     # Verify letter is rendered as string
-    assert isinstance(result["lettre"], str)
+    assert "rendered_letter" in result, "Should have rendered_letter field"
+    assert isinstance(result["rendered_letter"], str)
     
     # Verify key elements are present in letter
-    letter = result["lettre"]
+    letter = result["rendered_letter"]
     assert "12345678" in letter, "PV number should be in letter"
     assert "15/03/2024" in letter, "Date should be in letter"
     assert "Avenue de la République, Paris 11e" in letter, "Location should be in letter"
     assert "masqué par travaux" in letter, "Motif should be in letter"
     
-    # Verify LRAR mention in checklist
-    checklist_text = " ".join(result["checklist"])
-    assert "LRAR" in checklist_text or "recommandée" in checklist_text, "LRAR should be mentioned in checklist"
+    # Verify LRAR mention in resume
+    resume_text = " ".join(result["resume"])
+    assert "LRAR" in resume_text or "recommandée" in resume_text, "LRAR should be mentioned in resume"
     
     # Verify proper structure
     assert "DESTINATAIRE:" in letter
