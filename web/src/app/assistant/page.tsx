@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/Card'
 import { Toast } from '@/components/ui/Toast'
 import { useRouter } from 'next/navigation'
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
+const API = process.env.NEXT_PUBLIC_API_BASE || 'http://127.0.0.1:8000'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
