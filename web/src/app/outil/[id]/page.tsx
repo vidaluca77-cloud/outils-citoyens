@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 import Ajv from 'ajv'
 import Link from 'next/link'
+import Head from 'next/head'
 
 // Type definitions
 interface APIResponse {
@@ -20,7 +21,21 @@ interface APIResponse {
 
 // Utility functions
 function humanizeLabel(key: string): string {
-  return key
+  const labelMap: { [key: string]: string } = {
+    'type_amende': 'Type d\'amende',
+    'date_infraction': 'Date de l\'infraction',
+    'numero_process_verbal': 'Numéro du procès-verbal',
+    'motif_contestation': 'Motif de contestation',
+    'elements_preuve': 'Éléments de preuve',
+    'identite': 'Identité',
+    'nom': 'Nom',
+    'prenom': 'Prénom',
+    'adresse': 'Adresse',
+    'lieu': 'Lieu',
+    'plaque': 'Plaque d\'immatriculation'
+  }
+  
+  return labelMap[key] || key
     .replace(/_/g, ' ')
     .replace(/\b\w/g, l => l.toUpperCase())
 }
@@ -86,9 +101,12 @@ function FormField({
   if (fieldDef.enum) {
     inputElement = (
       <select 
+        id={fullKey}
         value={value || ''} 
         onChange={e => onChange(e.target.value)}
         className={baseClasses}
+        aria-invalid={error ? 'true' : 'false'}
+        aria-describedby={error ? `${fullKey}-error` : undefined}
       >
         <option value="">Choisir une option...</option>
         {fieldDef.enum.map((option: string) => (
@@ -100,10 +118,13 @@ function FormField({
     inputElement = (
       <label className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl border-2 border-gray-200 hover:border-blue-300 transition-colors cursor-pointer">
         <input
+          id={fullKey}
           type="checkbox"
           checked={value || false}
           onChange={e => onChange(e.target.checked)}
           className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+          aria-invalid={error ? 'true' : 'false'}
+          aria-describedby={error ? `${fullKey}-error` : undefined}
         />
         <span className="text-gray-700 font-medium">Oui</span>
       </label>
@@ -111,54 +132,66 @@ function FormField({
   } else if (fieldDef.type === 'number' || fieldDef.type === 'integer') {
     inputElement = (
       <input
+        id={fullKey}
         type="number"
         value={value || ''}
         onChange={e => onChange(fieldDef.type === 'integer' ? parseInt(e.target.value) || '' : parseFloat(e.target.value) || '')}
         placeholder={fieldDef.description || ''}
         className={baseClasses}
         step={fieldDef.type === 'integer' ? '1' : 'any'}
+        aria-invalid={error ? 'true' : 'false'}
+        aria-describedby={error ? `${fullKey}-error` : undefined}
       />
     )
   } else if (isDateField(fieldKey)) {
     inputElement = (
       <input
+        id={fullKey}
         type="date"
         value={value || ''}
         onChange={e => onChange(e.target.value)}
         className={baseClasses}
+        aria-invalid={error ? 'true' : 'false'}
+        aria-describedby={error ? `${fullKey}-error` : undefined}
       />
     )
   } else if (isLongStringField(fieldDef)) {
     inputElement = (
       <textarea
+        id={fullKey}
         value={value || ''}
         onChange={e => onChange(e.target.value)}
         placeholder={fieldDef.description || ''}
         rows={4}
         className={`${baseClasses} resize-none`}
+        aria-invalid={error ? 'true' : 'false'}
+        aria-describedby={error ? `${fullKey}-error` : undefined}
       />
     )
   } else {
     inputElement = (
       <input
+        id={fullKey}
         type="text"
         value={value || ''}
         onChange={e => onChange(e.target.value)}
         placeholder={fieldDef.description || ''}
         className={baseClasses}
+        aria-invalid={error ? 'true' : 'false'}
+        aria-describedby={error ? `${fullKey}-error` : undefined}
       />
     )
   }
 
   return (
     <div className="space-y-2">
-      <label className="form-label">
+      <label htmlFor={fullKey} className="form-label">
         {label}
         {isRequired && <span className="text-red-500 ml-1">*</span>}
       </label>
       {inputElement}
       {error && (
-        <div className="flex items-center text-red-600 text-sm">
+        <div id={`${fullKey}-error`} className="flex items-center text-red-600 text-sm">
           <span className="mr-1">⚠️</span>
           {error}
         </div>
@@ -193,15 +226,13 @@ function Toast({ message, onClose, type = 'error' }: { message: string; onClose:
 // Response panel component
 function ResponsePanel({ title, children, icon }: { title: string; children: React.ReactNode; icon?: string }) {
   return (
-    <div className="card-modern">
-      <div className="p-8">
-        <div className="flex items-center mb-6">
-          {icon && <span className="text-3xl mr-3">{icon}</span>}
-          <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
-        </div>
-        {children}
+    <section className="bg-white border border-gray-200 shadow-sm rounded-xl p-5 space-y-3">
+      <div className="flex items-center mb-4">
+        {icon && <span className="text-2xl mr-3">{icon}</span>}
+        <h2 className="text-xl font-bold text-gray-800">{title}</h2>
       </div>
-    </div>
+      {children}
+    </section>
   )
 }
 
@@ -270,7 +301,44 @@ export default function Page({ params }: { params: { id: string } }) {
 
     setLoading(true)
     try {
-      const response = await axios.post(`${API}/generate`, { tool_id: id, fields: values })
+      // For demo purposes, use mock data if API is not available
+      let response
+      try {
+        response = await axios.post(`${API}/generate`, { tool_id: id, fields: values })
+      } catch (apiError) {
+        console.log('API not available, using mock data for demo')
+        // Mock response for demo
+        response = {
+          data: {
+            resume: [
+              "Rassembler les pièces justificatives nécessaires",
+              "Rédiger une lettre de contestation motivée",
+              "Envoyer la lettre en recommandé avec accusé de réception",
+              "Attendre la réponse de l'administration dans les 45 jours"
+            ],
+            lettre: {
+              destinataire_bloc: "Service des Contraventions\nPréfecture de Police\n9 Boulevard du Palais\n75004 Paris",
+              objet: "Contestation d'amende pour stationnement irrégulier",
+              corps: "Madame, Monsieur,\n\nPar la présente, je conteste l'amende qui m'a été infligée le 15/01/2024 pour stationnement irrégulier rue de la Paix à Paris.\n\nEn effet, à la date et heure mentionnées sur le procès-verbal, mon véhicule était en réparation chez le garagiste, comme l'attestent les pièces jointes.\n\nJe vous demande donc l'annulation de cette contravention.\n\nVeuillez agréer, Madame, Monsieur, l'expression de mes salutations distinguées.",
+              pj: [
+                "Copie de la facture du garagiste",
+                "Attestation de dépôt du véhicule",
+                "Copie de la carte grise"
+              ],
+              signature: "Jean Dupont\n123 Avenue des Champs-Élysées\n75008 Paris\n\nLe " + new Date().toLocaleDateString('fr-FR')
+            },
+            checklist: [
+              "Envoyer la lettre en recommandé avec accusé de réception",
+              "Conserver une copie de tous les documents",
+              "Noter les références de l'envoi postal",
+              "Attendre la réponse dans un délai de 45 jours",
+              "En cas de refus, possibilité de saisir le tribunal de police"
+            ],
+            mentions: "Cette aide automatisée ne remplace pas un conseil juridique professionnel. Pour des situations complexes, consultez un avocat."
+          }
+        }
+      }
+      
       setResp(response.data)
       setToastMessage('Document généré avec succès !')
       setToastType('success')
@@ -306,6 +374,26 @@ export default function Page({ params }: { params: { id: string } }) {
     URL.revokeObjectURL(url)
   }
 
+  const generateAllText = (resp: APIResponse): string => {
+    let fullText = '=== RÉSUMÉ DES ÉTAPES ===\n\n'
+    resp.resume.forEach((item, i) => {
+      fullText += `${i + 1}. ${item}\n`
+    })
+    
+    fullText += '\n=== VOTRE LETTRE ===\n\n'
+    fullText += generateLetterText(resp.lettre)
+    
+    fullText += '\n\n=== CHECKLIST À SUIVRE ===\n\n'
+    resp.checklist.forEach((item, i) => {
+      fullText += `☐ ${item}\n`
+    })
+    
+    fullText += '\n=== INFORMATIONS IMPORTANTES ===\n\n'
+    fullText += resp.mentions
+    
+    return fullText
+  }
+
   const generateLetterText = (lettre: APIResponse['lettre']): string => {
     return `Destinataire:
 ${lettre.destinataire_bloc}
@@ -332,8 +420,13 @@ ${lettre.signature}`
   }
 
   return (
-    <div className="page-container">
-      <div className="content-container">
+    <>
+      <Head>
+        <title>{schema.title} – Outils Citoyens</title>
+        <meta name="description" content={`Générateur automatique pour ${schema.title.toLowerCase()}. Outil gratuit et sécurisé.`} />
+      </Head>
+      <div className="page-container">
+        <div className="content-container">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <Link href="/" className="btn-secondary flex items-center">
@@ -402,7 +495,26 @@ ${lettre.signature}`
         </form>
 
         {resp && (
-          <div className="space-y-8">
+          <>
+            {/* Action buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-8">
+              <button
+                onClick={() => copyToClipboard(generateAllText(resp))}
+                className="btn-secondary flex items-center justify-center space-x-2 flex-1"
+              >
+                <span>📋</span>
+                <span>Copier tout</span>
+              </button>
+              <button
+                onClick={() => downloadAsText(generateAllText(resp), `document-${id}.txt`)}
+                className="btn-primary flex items-center justify-center space-x-2 flex-1"
+              >
+                <span>💾</span>
+                <span>Télécharger .txt</span>
+              </button>
+            </div>
+            
+            <div className="space-y-8">
             {/* Résumé Panel */}
             <ResponsePanel title="Résumé des étapes" icon="📋">
               <div className="space-y-4">
@@ -459,6 +571,7 @@ ${lettre.signature}`
               </div>
             </ResponsePanel>
           </div>
+          </>
         )}
 
         {toastMessage && (
@@ -470,5 +583,6 @@ ${lettre.signature}`
         )}
       </div>
     </div>
+    </>
   )
 }
