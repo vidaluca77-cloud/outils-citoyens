@@ -93,13 +93,13 @@ def call_openai_with_retry(system_prompt: str, user_prompt: str, max_retries: in
     for attempt in range(max_retries):
         try:
             response = openai_client.chat.completions.create(
-                model="gpt-3.5-turbo-1106",  # Model that supports JSON mode
+                model="gpt-4o-mini",  # Updated model as specified
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
                 ],
                 response_format={"type": "json_object"},
-                temperature=0.7,
+                temperature=0.2,  # Updated temperature as specified
                 max_tokens=2000,
                 timeout=30
             )
@@ -111,7 +111,7 @@ def call_openai_with_retry(system_prompt: str, user_prompt: str, max_retries: in
                 # Try repair with explicit prompt
                 repair_prompt = f"Réparez ce JSON en format valide avec les clés resume[], lettre{{}}, checklist[], mentions: {content}"
                 repair_response = openai_client.chat.completions.create(
-                    model="gpt-3.5-turbo-1106",
+                    model="gpt-4o-mini",
                     messages=[
                         {"role": "system", "content": "Vous êtes un réparateur de JSON. Retournez uniquement du JSON valide."},
                         {"role": "user", "content": repair_prompt}
