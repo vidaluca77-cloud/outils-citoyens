@@ -61,6 +61,39 @@ def load_templates():
 SYSTEM_PROMPT = load_system_prompt()
 TEMPLATES = load_templates()
 
+def enhance_response_quality(response: Dict[str, Any], user_fields: dict, tool_id: str) -> Dict[str, Any]:
+    """Enhance response quality with user-centric improvements"""
+    import copy
+    enhanced = copy.deepcopy(response)
+    
+    # Ensure resume is comprehensive and reassuring
+    if len(enhanced.get("resume", [])) < 6:
+        # Add more helpful steps if too short
+        enhanced["resume"].extend([
+            "Garder confiance : vous suivez la bonne procédure et vos droits sont protégés",
+            "En cas de question, ne pas hésiter à contacter les services compétents - ils sont là pour vous aider"
+        ])
+    
+    # Enhance mentions to be more encouraging
+    if "mentions" in enhanced:
+        base_mentions = enhanced["mentions"]
+        if "🤖" not in base_mentions:  # If not already enhanced
+            enhanced["mentions"] = f"🤖 {base_mentions} 💪 Vous avez des droits légitimes, n'hésitez pas à les faire valoir avec confiance."
+    
+    # Personalize signature if user data available
+    if "lettre" in enhanced and user_fields:
+        # Try to personalize the signature block
+        signature = enhanced["lettre"].get("signature", "")
+        if "[" in signature and "]" in signature:
+            # Replace placeholders with more helpful text
+            enhanced["lettre"]["signature"] = signature.replace(
+                "[Votre prénom et NOM]", "[Indiquer vos prénom et nom]"
+            ).replace(
+                "[Votre adresse complète]", "[Votre adresse complète]"
+            )
+    
+    return enhanced
+
 def integrate_css_data(response: Dict[str, Any], user_fields: dict) -> Dict[str, Any]:
     """Integrate user data into CSS mock response for personalization"""
     import copy
@@ -361,31 +394,33 @@ def get_mock_response(tool_id: str, user_fields: dict = None) -> Dict[str, Any]:
         },
         "css": {
             "resume": [
-                "Évaluer précisément l'éligibilité selon les plafonds de ressources CSS en vigueur",
-                "Rassembler méthodiquement tous les justificatifs de ressources et de composition familiale",
-                "Compléter rigoureusement le formulaire S3715 de demande de CSS",
-                "Déposer le dossier complet auprès de la CPAM dans les délais réglementaires",
-                "Assurer le suivi du traitement dans un délai maximal de 2 mois",
-                "Activer la prise en charge dès notification d'acceptation pour optimiser les remboursements",
-                "Programmer le renouvellement annuel avant échéance pour éviter toute interruption de droits"
+                "Bonne nouvelle : vérifier votre éligibilité CSS selon vos revenus - vous pourriez être surpris(e) des économies possibles !",
+                "Rassembler tranquillement vos justificatifs - on vous guide pour ne rien oublier",
+                "Remplir le formulaire S3715 sans stress - il est plus simple qu'il n'y paraît",
+                "Déposer votre dossier à la CPAM - ils sont là pour vous aider, n'hésitez pas à demander conseil",
+                "Suivre sereinement le traitement (2 mois maximum) - la CPAM a l'obligation de vous répondre",
+                "Dès l'accord, votre CSS fonctionne immédiatement - fini les frais médicaux qui plombent le budget !",
+                "Programmer le renouvellement dans un an - un simple rappel et vous êtes tranquille",
+                "Profiter de votre protection santé - vous l'avez mérité et c'est votre droit !"
             ],
             "lettre": {
                 "destinataire_bloc": "Caisse Primaire d'Assurance Maladie\nService Complémentaire Santé Solidaire\n[Adresse CPAM de votre département]\n[Code postal] [Ville]",
-                "objet": "Demande de Complémentaire Santé Solidaire - Art. L861-1 CSS",
-                "corps": "Madame, Monsieur,\n\nJ'ai l'honneur de solliciter l'attribution de la Complémentaire Santé Solidaire pour mon foyer.\n\nSelon l'analyse de ma situation, mes ressources devraient me permettre de bénéficier de cette aide.\n\n[Détails de la situation et éligibilité]\n\nVeuillez trouver ci-joint l'ensemble des pièces justificatives requises.\n\nJe vous prie d'agréer mes salutations respectueuses.",
-                "pj": ["Formulaire S3715 complété", "Justificatifs de revenus", "Justificatif de domicile", "Pièce d'identité"],
-                "signature": "[Prénom NOM]\n[Adresse complète]\nN° Sécurité Sociale : [Numéro]\nLe [Date]"
+                "objet": "Demande de Complémentaire Santé Solidaire - Situation [situation spécifique]",
+                "corps": "Madame, Monsieur,\n\nJ'ai l'honneur de solliciter l'attribution de la Complémentaire Santé Solidaire pour mon foyer.\n\nMa situation actuelle me permet de prétendre à cette aide précieuse qui m'assurerait un accès aux soins sans frais supplémentaires.\n\n[Ici sera intégrée votre situation personnelle selon vos données]\n\nCette demande s'inscrit dans le cadre de la solidarité nationale pour l'accès aux soins, et j'espère que mon dossier recevra un accueil favorable.\n\nVous trouverez ci-joint l'ensemble des pièces justificatives requises. Je me tiens à votre disposition pour tout complément d'information.\n\nJe vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations respectueuses.",
+                "pj": ["Formulaire S3715 dûment complété et signé", "Justificatifs de revenus des 3 derniers mois", "Justificatif de domicile récent", "Copie de pièce d'identité", "Attestation de situation (si applicable)", "RIB pour les remboursements"],
+                "signature": "[Votre prénom et NOM]\n[Votre adresse complète]\n[Code postal et ville]\nN° Sécurité Sociale : [Votre numéro]\nTéléphone : [Votre numéro]\nFait à [Votre ville], le [Date du jour]"
             },
             "checklist": [
-                "Vérifier l'éligibilité selon les plafonds de ressources annuels actualisés",
-                "Télécharger le formulaire S3715 sur ameli.fr ou le retirer en agence CPAM",
-                "Rassembler les justificatifs de revenus des 3 derniers mois complets",
-                "Joindre les documents de composition familiale et de situation",
-                "Déposer le dossier dans les 2 mois suivant un changement de situation",
-                "Conserver une copie complète du dossier et l'accusé de réception",
-                "Prévoir le renouvellement avant l'échéance annuelle"
+                "✅ Calculer votre éligibilité précise selon vos revenus annuels - utilisez le simulateur ameli.fr si besoin",
+                "📋 Récupérer le formulaire S3715 sur ameli.fr ou dans votre agence CPAM (accueil toujours disponible)",
+                "💼 Rassembler vos justificatifs de revenus récents - même modestes, ils prouvent vos droits",
+                "🏠 Joindre un justificatif de domicile récent - facture, quittance, ou attestation d'hébergement",
+                "📮 Déposer rapidement votre dossier complet - plus vite c'est fait, plus vite vous êtes protégé(e)",
+                "📁 Conserver précieusement vos copies et l'accusé de réception - c'est votre sécurité",
+                "⏰ Noter le délai de 2 mois pour la réponse - et n'hésitez pas à relancer si besoin",
+                "🔄 Prévoir le renouvellement annuel à l'avance - un courrier vous le rappellera"
             ],
-            "mentions": "Aide automatisée – calculs indicatifs basés sur les plafonds en vigueur. Vérifier les montants exacts sur ameli.fr. Possibilité de recours auprès de la Commission de Recours Amiable en cas de refus. Alternative : dispositifs d'aide des collectivités locales ou mutuelles solidaires."
+            "mentions": "🤖 Cette aide automatisée évalue vos droits selon la législation en vigueur. 💰 La CSS peut vous faire économiser des centaines d'euros par an en frais de santé. ⚖️ En cas de refus, vous avez 2 mois pour faire un recours auprès de la CRA. 🏥 Avec la CSS, tous vos soins courants sont pris en charge sans avance de frais. 💪 N'hésitez pas à faire valoir vos droits - c'est fait pour vous aider ! 📞 Votre CPAM peut vous renseigner : ils sont là pour ça."
         }
     }
     
@@ -401,35 +436,44 @@ def get_mock_response(tool_id: str, user_fields: dict = None) -> Dict[str, Any]:
         elif tool_id == "css" and user_fields:
             response = integrate_css_data(response, user_fields)
         
+        # Apply quality enhancement to all responses
+        response = enhance_response_quality(response, user_fields, tool_id)
+        
         return response
     
     # Generic enhanced fallback for other tools
-    return {
+    generic_response = {
         "resume": [
-            "Analyser méthodiquement votre situation juridique au regard de la réglementation applicable",
-            "Constituer un dossier documentaire exhaustif avec l'ensemble des pièces justificatives pertinentes", 
-            "Rédiger un courrier administratif structuré et juridiquement fondé selon les règles de l'art",
-            "Expédier le courrier en lettre recommandée avec accusé de réception pour opposabilité légale",
-            "Effectuer un suivi rigoureux des délais de réponse et préparer les recours éventuels",
-            "Documenter chaque étape de la procédure pour assurer une traçabilité complète du dossier"
+            "Pas de panique : analyser calmement votre situation pour identifier vos droits et les démarches appropriées",
+            "Prendre le temps de rassembler tous vos documents - même si cela semble complexe, chaque pièce a son importance",
+            "Rédiger votre courrier en suivant nos conseils - vous avez toutes les clés pour être convaincant(e)",
+            "Envoyer en lettre recommandée pour être pris(e) au sérieux - c'est votre garantie légale",
+            "Suivre votre dossier sans stress - les administrations ont des délais à respecter",
+            "Rester confiant(e) : en connaissant vos droits et en suivant la procédure, vous maximisez vos chances de succès",
+            "Si besoin, ne pas hésiter à faire appel - vous avez des recours, utilisez-les !",
+            "Garder toutes vos preuves précieusement - c'est votre meilleure protection"
         ],
         "lettre": {
-            "destinataire_bloc": "Service compétent\n[Dénomination précise du service]\n[Adresse complète]\n[Code postal] [Ville]",
-            "objet": f"Demande relative à {tool_id.upper()} - Dossier n° [Référence]",
-            "corps": "Madame la Directrice, Monsieur le Directeur,\n\nJ'ai l'honneur de porter à votre connaissance ma demande relative à la situation administrative exposée ci-après.\n\n[Exposé circonstancié des faits et du fondement juridique de la demande]\n\nEn conséquence, je sollicite respectueusement votre intervention pour [objet précis de la demande].\n\nDans l'attente de votre réponse dans les délais réglementaires, je vous prie d'agréer, Madame la Directrice, Monsieur le Directeur, l'expression de ma considération distinguée.",
-            "pj": ["Copie certifiée conforme du document de référence", "Justificatif d'identité en cours de validité", "Pièces complémentaires selon la réglementation applicable"],
-            "signature": "[Prénom NOM en majuscules]\n[Qualité/Statut si pertinent]\n[Adresse complète]\nTéléphone : [Numéro]\nCourriel : [Email]\nFait à [Ville], le [Date complète]"
+            "destinataire_bloc": "Service compétent\n[Nom précis du service concerné]\n[Adresse complète du service]\n[Code postal] [Ville]",
+            "objet": f"Demande concernant {tool_id.replace('_', ' ').title()} - Dossier personnel",
+            "corps": "Madame, Monsieur,\n\nJ'ai l'honneur de m'adresser à vos services concernant ma situation qui nécessite votre expertise et votre intervention.\n\n[Ici, vous exposerez clairement votre situation en vous appuyant sur les faits et vos droits]\n\nJe suis convaincu(e) que ma demande est justifiée et j'espère qu'elle recevra un accueil favorable de votre part.\n\nVous trouverez ci-joint les documents nécessaires à l'examen de mon dossier. Je reste à votre disposition pour tout complément d'information.\n\nDans l'attente de votre réponse, je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations respectueuses.",
+            "pj": ["Documents justifiant votre situation", "Pièce d'identité en cours de validité", "Justificatif de domicile récent", "Tout document pertinent selon votre cas"],
+            "signature": "[Votre prénom et NOM]\n[Votre adresse complète]\n[Code postal et ville]\nTéléphone : [Votre numéro]\nEmail : [Votre email]\n\nFait à [Votre ville], le [Date du jour]"
         },
         "checklist": [
-            "Conserver rigoureusement une copie intégrale signée de tous les documents transmis",
-            "Respecter scrupuleusement les délais légaux et réglementaires applicables à votre situation", 
-            "Joindre systématiquement toutes les pièces justificatives exigées par la procédure",
-            "Assurer un suivi méthodique des accusés de réception et des délais de traitement",
-            "Préparer les voies de recours appropriées en cas de décision défavorable",
-            "Solliciter l'assistance d'un professionnel du droit en cas de complexité particulière"
+            "📋 Faire une copie de tous vos documents avant envoi - c'est votre sécurité",
+            "⏰ Bien noter les délais à respecter et les programmer dans votre agenda",
+            "📎 Rassembler toutes les pièces demandées - même si cela prend du temps, c'est essentiel",
+            "📬 Envoyer en recommandé avec accusé de réception - gardez précieusement ce papier",
+            "📅 Noter la date limite de réponse et programmer un rappel si nécessaire",
+            "💪 Rester patient(e) mais vigilant(e) - vous avez fait le nécessaire",
+            "🔄 En cas de problème, ne pas hésiter à relancer ou faire appel - c'est votre droit",
+            "📞 Si vous avez des doutes, contacter le service concerné - ils sont là pour vous aider"
         ],
-        "mentions": "Aide juridique automatisée – ne se substitue aucunement aux conseils personnalisés d'un avocat spécialisé. Vérifier impérativement les délais légaux et conditions d'éligibilité applicables à votre situation particulière. Possibilité de recours gracieux puis contentieux selon la nature du litige. Documentation juridique disponible sur les sites officiels des administrations compétentes."
+        "mentions": "🤖 Cette aide automatisée vous donne les bases pour bien démarrer vos démarches. 💪 Vous avez des droits, n'hésitez pas à les faire valoir ! ⚖️ En cas de doute, un avocat peut vous conseiller pour les situations complexes. 📞 Les services publics ont l'obligation de vous renseigner - n'hésitez pas à les contacter. 🕒 Respectez bien les délais, mais ne vous mettez pas de pression inutile. 🎯 Avec de la méthode et de la persévérance, la plupart des démarches aboutissent positivement."
     }
+    
+    return enhance_response_quality(generic_response, user_fields, tool_id)
 
 def validate_and_fix_response(response_data: Dict[str, Any], tool_id: str) -> Dict[str, Any]:
     """Validate response has required keys and fix if needed"""
@@ -550,21 +594,23 @@ def generate_with_two_passes(system_prompt: str, user_prompt: str, tool_id: str)
 
 CRITIQUE PROFESSIONNELLE REQUISE - Améliore la qualité et le professionnalisme :
 
-1. PERSONNALISATION : Intègre mieux les données utilisateur dans tous les champs (dates, noms, montants, références). Évite les formulations génériques.
+1. PERSONNALISATION INTELLIGENTE : Intègre de manière naturelle et empathique les données utilisateur dans tous les champs (dates, noms, montants, références). Évite absolument les formulations génériques. Montre une compréhension profonde de la situation personnelle.
 
-2. TONALITÉ PROFESSIONNELLE : Vérifie que le langage administratif est soutenu, précis et élégant. Améliore les formules de politesse et la structure argumentative.
+2. TONALITÉ HUMAINE ET PROFESSIONNELLE : Équilibre parfaitement un langage juridique précis avec une approche bienveillante et accessible. Améliore les formules de politesse pour qu'elles soient chaleureuses mais respectueuses. Rend la structure argumentative claire et rassurante.
 
-3. PRÉCISION JURIDIQUE : Ajoute des références légales spécifiques, calcule les délais exacts, mentionne les procédures détaillées.
+3. PRÉCISION JURIDIQUE ACCESSIBLE : Ajoute des références légales spécifiques EXPLIQUÉES simplement, calcule les délais exacts AVEC explications, mentionne les procédures détaillées de manière accessible et rassurante.
 
-4. EXHAUSTIVITÉ : Assure-toi que :
-   - resume contient 5-8 étapes détaillées avec estimations temporelles
-   - lettre intègre parfaitement les données fournies et utilise un vocabulaire juridique approprié
-   - checklist inclut des actions expertes avec délais précis
-   - mentions contient 3-5 rappels juridiques prudents avec références aux recours
+4. EXHAUSTIVITÉ ET ANTICIPATION : Assure-toi que la réponse est SI complète que l'utilisateur n'aura pas besoin de revenir :
+   - resume contient 6-10 étapes détaillées avec estimations temporelles ET conseils pour gérer le stress
+   - lettre intègre parfaitement les données fournies et utilise un vocabulaire professionnel mais accessible
+   - checklist inclut des actions expertes avec délais précis ET conseils pratiques rassurants
+   - mentions contient 4-6 rappels juridiques bienveillants avec références aux recours ET encouragements
 
-5. ÉLÉGANCE RÉDACTIONNELLE : Évite les répétitions, utilise des synonymes, structure les paragraphes logiquement.
+5. EXCELLENCE RELATIONNELLE : Adopte le ton d'un conseiller expert ET bienveillant qui comprend l'anxiété juridique. Évite les répétitions, utilise des synonymes, structure les paragraphes logiquement, et ajoute des éléments rassurants.
 
-Réponds en JSON strict identique mais considérablement amélioré selon ces critères professionnels."""
+6. QUALITÉ CHATGPT : La réponse doit avoir la qualité conversationnelle de ChatGPT tout en gardant la précision juridique. Anticipe les questions de suivi et les inquiétudes.
+
+Réponds en JSON strict identique mais transformé selon ces critères d'excellence humaine et professionnelle."""
 
         pass2_response = call_openai_with_retry(system_prompt, critique_prompt)
         
