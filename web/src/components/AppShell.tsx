@@ -39,7 +39,7 @@ export function AppShell({ children, title }: AppShellProps) {
       </main>
 
       {/* Bottom Navigation - Mobile Only */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 z-30 lg:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 z-30 mobile-nav">
         <div className="flex items-center justify-around">
           <Link 
             href="/"

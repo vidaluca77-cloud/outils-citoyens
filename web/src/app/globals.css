@@ -35,6 +35,17 @@
 }
 
 @layer utilities {
+  /* Mobile navigation */
+  .mobile-nav {
+    display: flex;
+  }
+  
+  @media (min-width: 1024px) {
+    .mobile-nav {
+      display: none !important;
+    }
+  }
+
   /* Mobile haptic visual feedback */
   .tap-highlight {
     -webkit-tap-highlight-color: rgba(59, 130, 246, 0.1);
