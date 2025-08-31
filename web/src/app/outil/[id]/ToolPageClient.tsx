@@ -8,6 +8,7 @@ import { Button } from '../../../components/ui/Button'
 import { Card } from '../../../components/ui/Card'
 import { Field, Input, Textarea, Select } from '../../../components/ui/Field'
 import { Toast as ToastComponent } from '../../../components/ui/Toast'
+import { Copy, Download, ArrowLeft, FileText } from 'lucide-react'
 import { ToolFAQ, generateFAQJsonLD } from '../../../components/ToolFAQ'
 
 // Type definitions
