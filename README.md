@@ -11,6 +11,45 @@ Ce dépôt est minimal mais **contractuel** : Copilot peut développer le reste 
 - `tests/` : checklists d’acceptation.
 - `.github/` : rappel des tâches.
 
+## API Documentation
+
+### Modèle et Stratégie IA
+
+**Modèle choisi :** 
+- Production : `gpt-4o` (température 0.2, max_tokens 1200)
+- Réparation/brouillon : `gpt-4o-mini` (pour robustesse)
+
+**Schéma de sortie :**
+```python
+class Lettre(BaseModel):
+    destinataire_bloc: str
+    objet: str
+    corps: str
+    pj: List[str]
+    signature: str
+
+class Output(BaseModel):
+    resume: List[str]          # 4-8 puces concrètes
+    lettre: Lettre            # Lettre administrative structurée
+    checklist: List[str]      # Actions claires (verbes à l'infinitif)
+    mentions: str             # 2-4 rappels prudents
+```
+
+**Stratégie 2 passes :**
+1. **Pass 1** : Génération initiale du JSON avec gpt-4o
+2. **Pass 2** : Auto-critique et amélioration du contenu (structure, ton, clarté)
+
+**Robustesse :**
+- Retry exponentiel (x3) sur erreurs réseau/429
+- Timeout 15-20s par passe
+- Logs structurés (outil, durée, succès/échec)
+- Fallback mock après échec total
+
+**Templates enrichis :**
+- Prompts spécialisés par outil avec "bases de rappel" légales
+- Exemples few-shot pour amendes, travail, loyers
+- Références juridiques précises (délais, procédures)
+
 ## Contrat API
 `POST /generate` reçoit : 
 ```json
