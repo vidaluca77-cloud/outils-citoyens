@@ -24,7 +24,7 @@ export default function OutilsPage() {
           Choisissez votre outil
         </h1>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Sélectionnez l'outil correspondant à votre situation pour générer votre document personnalisé
+          Sélectionnez l&apos;outil correspondant à votre situation pour générer votre document personnalisé
         </p>
       </div>
 
