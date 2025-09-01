@@ -1,22 +1,69 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Mon Dossier CAF Simplifié",
+  "title": "Recours CAF",
+  "description": "Générez simplement votre recours CAF pour contester une décision",
   "type": "object",
   "properties": {
-    "type_courrier_caf": {
+    "type_courrier": {
       "type": "string",
-      "description": "indu, demande de pièces, suspension…"
+      "title": "Type de problème CAF",
+      "enum": [
+        "indu",
+        "suspension",
+        "demande_pieces",
+        "refus_aide",
+        "autre"
+      ]
     },
-    "resume_courrier": {
-      "type": "string"
+    "numero_allocataire": {
+      "type": "string",
+      "title": "Numéro allocataire",
+      "description": "Votre numéro d'allocataire CAF"
     },
-    "situation": {
-      "type": "string"
+    "motif": {
+      "type": "string",
+      "title": "Motif de contestation",
+      "description": "Expliquez pourquoi vous contestez cette décision CAF"
+    },
+    "montant": {
+      "type": "string",
+      "title": "Montant concerné (optionnel)",
+      "description": "Montant en euros si applicable"
+    },
+    "date_courrier": {
+      "type": "string",
+      "title": "Date du courrier CAF",
+      "description": "Date du courrier CAF que vous contestez (JJ/MM/AAAA)"
+    },
+    "identite": {
+      "type": "object",
+      "title": "Vos informations",
+      "properties": {
+        "nom": {
+          "type": "string",
+          "title": "Nom"
+        },
+        "prenom": {
+          "type": "string",
+          "title": "Prénom"
+        },
+        "adresse": {
+          "type": "string",
+          "title": "Adresse complète"
+        }
+      },
+      "required": [
+        "nom",
+        "prenom",
+        "adresse"
+      ]
     }
   },
   "required": [
-    "type_courrier_caf",
-    "resume_courrier"
+    "type_courrier",
+    "numero_allocataire",
+    "motif",
+    "identite"
   ],
   "additionalProperties": false
 }

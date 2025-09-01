@@ -1,17 +1,20 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Mon Aide Cachée",
+  "title": "Recherche d'aides sociales",
+  "description": "Générez simplement votre demande d'aides sociales personnalisée",
   "type": "object",
   "properties": {
-    "composition_foyer": {
+    "situation_familiale": {
       "type": "string",
-      "description": "ex: 2 adultes, 1 enfant"
+      "title": "Composition du foyer",
+      "description": "Ex: 2 adultes, 1 enfant"
     },
     "situation_pro": {
       "type": "string",
+      "title": "Situation professionnelle",
       "enum": [
         "CDI",
-        "CDD",
+        "CDD", 
         "AE",
         "chomage",
         "etudiant",
@@ -19,35 +22,56 @@
         "autre"
       ]
     },
-    "revenu_mensuel_net": {
-      "type": "number"
+    "revenu_mensuel": {
+      "type": "number",
+      "title": "Revenus mensuels nets (€)",
+      "description": "Revenus nets du foyer"
     },
-    "logement": {
+    "situation_logement": {
       "type": "string",
+      "title": "Situation de logement",
       "enum": [
         "locataire",
         "proprietaire",
         "heberge"
       ]
     },
-    "code_postal": {
-      "type": "string"
-    },
-    "sante_couverture": {
+    "problemes_rencontres": {
       "type": "string",
-      "enum": [
-        "aucune",
-        "mutuelle",
-        "css",
-        "ame"
+      "title": "Difficultés rencontrées",
+      "description": "Décrivez vos difficultés (logement, santé, finances...)"
+    },
+    "identite": {
+      "type": "object",
+      "title": "Vos informations",
+      "properties": {
+        "nom": {
+          "type": "string",
+          "title": "Nom"
+        },
+        "prenom": {
+          "type": "string",
+          "title": "Prénom"
+        },
+        "adresse": {
+          "type": "string",
+          "title": "Adresse complète"
+        }
+      },
+      "required": [
+        "nom",
+        "prenom",
+        "adresse"
       ]
     }
   },
   "required": [
-    "composition_foyer",
-    "revenu_mensuel_net",
-    "logement",
-    "code_postal"
+    "situation_familiale",
+    "situation_pro",
+    "revenu_mensuel",
+    "situation_logement",
+    "problemes_rencontres",
+    "identite"
   ],
   "additionalProperties": false
 }

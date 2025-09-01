@@ -1,38 +1,63 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Mes Droits au Travail",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Réclamation droit du travail",
+  "description": "Défendez vos droits au travail (salaires, congés, harcèlement, licenciement)",
   "type": "object",
   "properties": {
-    "situation": {
+    "type_probleme": {
       "type": "string",
-      "description": "licenciement, heures sup, harcèlement…"
+      "title": "Type de problème",
+      "enum": [
+        "heures_supplementaires",
+        "licenciement_abusif",
+        "harcelement",
+        "salaire_impaye",
+        "conges_refuses",
+        "discrimination",
+        "autre"
+      ]
     },
-    "contrat": {
+    "type_contrat": {
       "type": "string",
+      "title": "Type de contrat",
       "enum": [
         "CDI",
         "CDD",
         "Interim",
+        "Stage",
         "Autre"
       ]
     },
-    "anciennete_mois": {
-      "type": "integer"
+    "anciennete": {
+      "type": "string",
+      "title": "Ancienneté dans l'entreprise",
+      "description": "Durée de votre emploi (ex: 2 ans 3 mois)"
+    },
+    "description_probleme": {
+      "type": "string",
+      "title": "Description du problème",
+      "description": "Décrivez précisément la situation"
     },
     "elements_preuve": {
-      "type": "string"
+      "type": "string",
+      "title": "Éléments de preuve",
+      "description": "Documents, témoins, messages que vous possédez"
     },
     "identite": {
       "type": "object",
+      "title": "Vos informations",
       "properties": {
         "nom": {
-          "type": "string"
+          "type": "string",
+          "title": "Nom"
         },
         "prenom": {
-          "type": "string"
+          "type": "string",
+          "title": "Prénom"
         },
         "adresse": {
-          "type": "string"
+          "type": "string",
+          "title": "Adresse complète"
         }
       },
       "required": [
@@ -43,23 +68,27 @@
     },
     "employeur": {
       "type": "object",
+      "title": "Informations employeur",
       "properties": {
-        "raison_sociale": {
-          "type": "string"
+        "nom_entreprise": {
+          "type": "string",
+          "title": "Nom de l'entreprise"
         },
-        "adresse": {
-          "type": "string"
+        "adresse_entreprise": {
+          "type": "string",
+          "title": "Adresse de l'entreprise"
         }
       },
       "required": [
-        "raison_sociale",
-        "adresse"
+        "nom_entreprise",
+        "adresse_entreprise"
       ]
     }
   },
   "required": [
-    "situation",
-    "contrat",
+    "type_probleme",
+    "type_contrat",
+    "description_probleme",
     "identite",
     "employeur"
   ],

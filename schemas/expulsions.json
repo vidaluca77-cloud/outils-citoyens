@@ -1,29 +1,75 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Expulsions/Coupures Illégales Stop",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Contestation expulsion ou coupure",
+  "description": "Contestez une expulsion ou coupure illégale (eau, électricité, gaz)",
   "type": "object",
   "properties": {
-    "situation": {
+    "type_probleme": {
       "type": "string",
-      "description": "coupure eau/élec/gaz, menace expulsion…"
-    },
-    "statut": {
-      "type": "string",
+      "title": "Type de problème",
       "enum": [
-        "locataire",
-        "proprietaire"
+        "coupure_eau",
+        "coupure_electricite",
+        "coupure_gaz",
+        "menace_expulsion",
+        "expulsion_effective",
+        "autre"
       ]
     },
-    "dates": {
-      "type": "string"
+    "statut_logement": {
+      "type": "string",
+      "title": "Votre statut",
+      "enum": [
+        "locataire",
+        "proprietaire",
+        "heberge"
+      ]
     },
-    "preuves": {
-      "type": "string"
+    "date_probleme": {
+      "type": "string",
+      "title": "Date du problème",
+      "description": "Date de la coupure ou notification d'expulsion (JJ/MM/AAAA)"
+    },
+    "description_situation": {
+      "type": "string",
+      "title": "Description de la situation",
+      "description": "Décrivez précisément votre situation"
+    },
+    "elements_preuve": {
+      "type": "string",
+      "title": "Éléments de preuve",
+      "description": "Documents, témoins, photos que vous possédez"
+    },
+    "identite": {
+      "type": "object",
+      "title": "Vos informations",
+      "properties": {
+        "nom": {
+          "type": "string",
+          "title": "Nom"
+        },
+        "prenom": {
+          "type": "string",
+          "title": "Prénom"
+        },
+        "adresse": {
+          "type": "string",
+          "title": "Adresse complète"
+        }
+      },
+      "required": [
+        "nom",
+        "prenom",
+        "adresse"
+      ]
     }
   },
   "required": [
-    "situation",
-    "statut"
+    "type_probleme",
+    "statut_logement",
+    "date_probleme",
+    "description_situation",
+    "identite"
   ],
   "additionalProperties": false
 }

@@ -1,36 +1,70 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Stop Loyers Abusifs",
+  "title": "Contestation de loyer abusif",
+  "description": "Générez simplement votre contestation de loyer pour un montant abusif",
   "type": "object",
   "properties": {
-    "adresse_complete": {
-      "type": "string"
+    "adresse_logement": {
+      "type": "string",
+      "title": "Adresse du logement loué",
+      "description": "Adresse complète du logement concerné"
     },
     "surface_m2": {
-      "type": "number"
+      "type": "number",
+      "title": "Surface en m²",
+      "description": "Surface habitable du logement"
     },
-    "nb_pieces": {
-      "type": "integer"
+    "loyer_actuel": {
+      "type": "number",
+      "title": "Loyer actuel (€)",
+      "description": "Montant du loyer mensuel hors charges"
     },
-    "annee_construction": {
-      "type": "integer"
+    "loyer_reference": {
+      "type": "number",
+      "title": "Loyer de référence (€)",
+      "description": "Montant légal maximum selon l'encadrement"
     },
-    "meuble": {
-      "type": "boolean"
+    "bailleur": {
+      "type": "string",
+      "title": "Nom du bailleur",
+      "description": "Nom ou raison sociale du propriétaire"
     },
-    "loyer_hc": {
-      "type": "number"
+    "adresse_bailleur": {
+      "type": "string",
+      "title": "Adresse du bailleur",
+      "description": "Adresse complète du bailleur"
     },
-    "charges": {
-      "type": "number"
+    "identite": {
+      "type": "object",
+      "title": "Vos informations",
+      "properties": {
+        "nom": {
+          "type": "string",
+          "title": "Nom"
+        },
+        "prenom": {
+          "type": "string",
+          "title": "Prénom"
+        },
+        "adresse": {
+          "type": "string",
+          "title": "Adresse complète"
+        }
+      },
+      "required": [
+        "nom",
+        "prenom",
+        "adresse"
+      ]
     }
   },
   "required": [
-    "adresse_complete",
+    "adresse_logement",
     "surface_m2",
-    "nb_pieces",
-    "meuble",
-    "loyer_hc"
+    "loyer_actuel",
+    "bailleur",
+    "adresse_bailleur",
+    "identite"
   ],
   "additionalProperties": false
 }
