@@ -38,11 +38,19 @@ class Lettre(BaseModel):
     pj: List[str]
     signature: str
 
+class ContexteEducatif(BaseModel):
+    histoire_du_droit: str
+    enjeux_societaux: str
+    ressources_locales: List[str]
+    alternatives_strategiques: List[str]
+    impact_preventif: str
+
 class Output(BaseModel):
     resume: List[str]
     lettre: Lettre
     checklist: List[str]
     mentions: str
+    contexte_educatif: ContexteEducatif
 
 # OpenAI setup with validation
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -106,24 +114,176 @@ def load_templates():
 SYSTEM_PROMPT = load_system_prompt()
 TEMPLATES = load_templates()
 
+def analyze_emotional_context(user_fields: dict) -> str:
+    """Analyze user emotional state from language and context for better personalization"""
+    emotional_indicators = {
+        'stress_high': ['urgent', 'catastrophe', 'désespéré', 'paniqué', 'aide', 'sos'],
+        'anger': ['scandaleux', 'inadmissible', 'révoltant', 'injuste', 'colère'],
+        'anxiety': ['inquiet', 'peur', 'angoisse', 'nerveux', 'stress'],
+        'confidence': ['sûr', 'confiant', 'déterminé', 'convaincu', 'certain']
+    }
+    
+    # Analyze text content for emotional indicators
+    text_content = ' '.join(str(v).lower() for v in user_fields.values() if isinstance(v, str))
+    
+    detected_emotions = {}
+    for emotion, indicators in emotional_indicators.items():
+        score = sum(1 for indicator in indicators if indicator in text_content)
+        if score > 0:
+            detected_emotions[emotion] = score
+    
+    # Determine predominant emotional state
+    if not detected_emotions:
+        return "neutral"
+    
+    return max(detected_emotions.keys(), key=lambda k: detected_emotions[k])
+
 def enhance_response_quality(response: Dict[str, Any], user_fields: dict, tool_id: str) -> Dict[str, Any]:
-    """Enhance response quality with user-centric improvements"""
+    """Enhance response quality with advanced emotional intelligence and personalization"""
     import copy
     enhanced = copy.deepcopy(response)
     
-    # Ensure resume is comprehensive and reassuring
-    if len(enhanced.get("resume", [])) < 6:
-        # Add more helpful steps if too short
-        enhanced["resume"].extend([
-            "Garder confiance : vous suivez la bonne procédure et vos droits sont protégés",
-            "En cas de question, ne pas hésiter à contacter les services compétents - ils sont là pour vous aider"
-        ])
+    # Detect emotional context for better adaptation
+    emotional_state = analyze_emotional_context(user_fields)
     
-    # Enhance mentions to be more encouraging
+    # Enhance resume with emotional adaptation
+    if len(enhanced.get("resume", [])) < 8:
+        # Add emotionally adapted encouragements
+        if emotional_state == "stress_high":
+            enhanced["resume"].extend([
+                "🌟 Respirer profondément : vous êtes dans votre droit et cette démarche va aboutir positivement",
+                "💪 Cette situation difficile va se résoudre étape par étape - vous avez tous les atouts en main",
+                "🎯 Chaque document que vous rassemblez vous rapproche de la solution - vous progressez !"
+            ])
+        elif emotional_state == "anger":
+            enhanced["resume"].extend([
+                "⚖️ Votre indignation est légitime et le droit français protège votre situation",
+                "🔥 Transformer cette énergie en action structurée - votre cause est juste et vous allez gagner",
+                "🏛️ Les institutions sont là pour vous servir - exigez le respect de vos droits citoyens"
+            ])
+        else:
+            enhanced["resume"].extend([
+                "🎓 Cette démarche renforce votre expertise citoyenne pour l'avenir",
+                "🤝 En agissant ainsi, vous participez à l'amélioration du service public pour tous",
+                "✨ Confiance et détermination : vous maîtrisez parfaitement cette procédure"
+            ])
+    
+    # Enhance mentions with emotional intelligence
     if "mentions" in enhanced:
         base_mentions = enhanced["mentions"]
-        if "🤖" not in base_mentions:  # If not already enhanced
-            enhanced["mentions"] = f"🤖 {base_mentions} 💪 Vous avez des droits légitimes, n'hésitez pas à les faire valoir avec confiance."
+        emotional_suffix = ""
+        
+        if emotional_state == "stress_high":
+            emotional_suffix = " 🧘‍♀️ Gardez confiance : des milliers de citoyens vivent des situations similaires et obtiennent gain de cause chaque jour. Votre démarche est parfaitement légitime et vos droits sont protégés par la République française."
+        elif emotional_state == "anger":
+            emotional_suffix = " ⚡ Votre colère est compréhensible et justifiée. Canalisez cette énergie dans une action déterminée : le système juridique français est conçu pour protéger les citoyens comme vous. Justice sera rendue."
+        elif emotional_state == "anxiety":
+            emotional_suffix = " 🌈 Il est normal de ressentir de l'appréhension face aux démarches administratives. Sachez que vous êtes parfaitement préparé(e) et que vos droits sont solides. Chaque étape vous rapproche de la résolution."
+        else:
+            emotional_suffix = " 🎯 Votre approche méthodique et votre détermination sont exemplaires. Vous incarnez la citoyenneté active qui fait la force de notre République."
+        
+        enhanced["mentions"] = f"{base_mentions}{emotional_suffix}"
+    
+    # Add enhanced educational context if missing
+    if "contexte_educatif" not in enhanced:
+        enhanced["contexte_educatif"] = generate_educational_context(tool_id, user_fields, emotional_state)
+    
+    # Enhance letter personalization
+    if "lettre" in enhanced and user_fields:
+        letter = enhanced["lettre"]
+        
+        # Enhance signature with professional personalization
+        identite = user_fields.get('identite', {})
+        if identite:
+            signature_parts = []
+            if identite.get('prenom') and identite.get('nom'):
+                signature_parts.append(f"{identite['prenom']} {identite['nom']}")
+            
+            # Add professional context if detected
+            if 'profession' in user_fields or 'statut' in user_fields:
+                profession = user_fields.get('profession') or user_fields.get('statut', '')
+                if profession and profession.lower() not in ['', 'sans']:
+                    signature_parts.append(f"({profession})")
+            
+            if identite.get('adresse'):
+                signature_parts.append(identite['adresse'])
+                
+            if 'telephone' in user_fields:
+                signature_parts.append(f"Tél : {user_fields['telephone']}")
+                
+            if signature_parts:
+                enhanced["lettre"]["signature"] = "\n".join(signature_parts)
+    
+    return enhanced
+
+def generate_educational_context(tool_id: str, user_fields: dict, emotional_state: str) -> Dict[str, Any]:
+    """Generate rich educational context based on the tool and user situation"""
+    
+    # Base educational contexts by tool
+    educational_contexts = {
+        "amendes": {
+            "histoire_du_droit": "Le droit de contestation des amendes existe depuis la Révolution française (principe du contradictoire). Renforcé en 1958 puis 2011 avec la dématérialisation, il garantit que tout citoyen peut contester une sanction qu'il estime injustifiée. C'est un pilier de l'État de droit qui protège contre l'arbitraire administratif.",
+            "enjeux_societaux": "Chaque contestation légitime contribue à améliorer la qualité du contrôle routier et à rappeler aux autorités l'importance de la précision. C'est un acte citoyen qui participe à l'équilibre entre sécurité publique et droits individuels. Votre démarche renforce la justice pour tous.",
+            "ressources_locales": [
+                "Permanences juridiques gratuites dans les mairies",
+                "Points d'accès au droit (PAD) du département", 
+                "Associations de défense des usagers de la route",
+                "Maisons de la justice et du droit",
+                "Consultations d'avocats gratuits (selon revenus)"
+            ],
+            "alternatives_strategiques": [
+                "Négociation amiable avec l'autorité verbalisatrice (rare mais possible)",
+                "Médiation préalable avec le service des contraventions", 
+                "Contestation formelle (recommandé dans votre cas)",
+                "Recours devant le tribunal en cas d'échec (dernière option)"
+            ],
+            "impact_preventif": "Conserver systématiquement les photos de signalisation, noter les conditions météo et de circulation, vérifier l'étalonnage des radars si concerné. Votre vigilance citoyenne protège vos droits futurs et contribue à un contrôle plus juste."
+        },
+        "caf": {
+            "histoire_du_droit": "Le système d'allocations familiales créé en 1932 et généralisé en 1945 par la Sécurité sociale garantit la solidarité nationale. Le droit de recours contre les décisions CAF (1946, renforcé en 1987) protège les bénéficiaires contre les erreurs administratives et assure l'égalité de traitement.",
+            "enjeux_societaux": "Votre réclamation défend non seulement vos droits, mais aussi ceux de milliers de familles dans des situations similaires. Chaque recours justifié améliore les procédures et rappelle à l'administration sa mission de service public. C'est un acte de citoyenneté active.",
+            "ressources_locales": [
+                "Points d'accueil CAF de votre département",
+                "Centres communaux d'action sociale (CCAS)",
+                "Union départementale des associations familiales",
+                "Permanences juridiques spécialisées prestations sociales",
+                "Défenseur des droits (antenne locale)"
+            ],
+            "alternatives_strategiques": [
+                "Entretien en agence CAF pour explication amiable",
+                "Recours gracieux (recommandé en première intention)",
+                "Saisine de la Commission de recours amiable (CRA)",
+                "Tribunal administratif en dernier recours"
+            ],
+            "impact_preventif": "Actualiser régulièrement votre dossier CAF, photographier tous les justificatifs envoyés, conserver les accusés de réception. Une gestion rigoureuse évite 90% des problèmes futurs et vous protège contre les récupérations indues."
+        }
+    }
+    
+    # Get base context or create generic one
+    base_context = educational_contexts.get(tool_id, {
+        "histoire_du_droit": "Ce droit résulte de l'évolution historique de la protection des citoyens face à l'administration, principe fondamental de l'État de droit français depuis la Révolution.",
+        "enjeux_societaux": "Votre démarche participe à l'amélioration du service public et à la défense des droits de tous les citoyens dans des situations similaires.",
+        "ressources_locales": ["Mairie", "Points d'accès au droit", "Permanences juridiques"],
+        "alternatives_strategiques": ["Négociation amiable", "Recours administratif", "Voie juridictionnelle"],
+        "impact_preventif": "Documentation systématique et suivi rigoureux des échanges pour protéger vos droits futurs."
+    })
+    
+    # Personalize based on user context
+    if user_fields.get('age') and int(user_fields.get('age', 0)) < 25:
+        base_context["ressources_locales"].append("Points d'information jeunesse (PIJ)")
+        base_context["ressources_locales"].append("Missions locales pour l'insertion des jeunes")
+    
+    if user_fields.get('situation_familiale') in ['parent_isole', 'famille_monoparentale']:
+        base_context["ressources_locales"].append("Association nationale des parents isolés")
+        base_context["ressources_locales"].append("Réseaux d'entraide parents solos")
+    
+    # Adapt tone based on emotional state
+    if emotional_state == "stress_high":
+        base_context["impact_preventif"] = f"🌱 {base_context['impact_preventif']} Cette organisation vous apportera sérénité et contrôle sur votre situation."
+    elif emotional_state == "anger":
+        base_context["enjeux_societaux"] = f"⚡ {base_context['enjeux_societaux']} Votre détermination est un moteur de justice sociale."
+    
+    return base_context
     
     # Personalize signature if user data available
     if "lettre" in enhanced and user_fields:
@@ -889,7 +1049,25 @@ def get_mock_response(tool_id: str, user_fields: dict = None) -> Dict[str, Any]:
                 "Conserver précieusement l'original de l'avis de contravention et tous les accusés de réception",
                 "Calculer précisément les délais de prescription et de recours pour anticiper les échéances"
             ],
-            "mentions": "Aide juridique automatisée – ne se substitue aucunement aux conseils personnalisés d'un avocat spécialisé. Respecter impérativement le délai de contestation de 45 jours. En cas de complexité particulière, solliciter l'assistance d'un professionnel du droit. Possibilité de recours devant le tribunal compétent en cas de rejet non motivé."
+            "mentions": "Aide juridique automatisée – ne se substitue aucunement aux conseils personnalisés d'un avocat spécialisé. Respecter impérativement le délai de contestation de 45 jours. En cas de complexité particulière, solliciter l'assistance d'un professionnel du droit. Possibilité de recours devant le tribunal compétent en cas de rejet non motivé.",
+            "contexte_educatif": {
+                "histoire_du_droit": "Le droit de contestation des amendes existe depuis la Révolution française (principe du contradictoire). Renforcé en 1958 puis 2011 avec la dématérialisation, il garantit que tout citoyen peut contester une sanction qu'il estime injustifiée. C'est un pilier de l'État de droit qui protège contre l'arbitraire administratif.",
+                "enjeux_societaux": "Chaque contestation légitime contribue à améliorer la qualité du contrôle routier et à rappeler aux autorités l'importance de la précision. C'est un acte citoyen qui participe à l'équilibre entre sécurité publique et droits individuels. Votre démarche renforce la justice pour tous.",
+                "ressources_locales": [
+                    "Permanences juridiques gratuites dans les mairies",
+                    "Points d'accès au droit (PAD) du département", 
+                    "Associations de défense des usagers de la route",
+                    "Maisons de la justice et du droit",
+                    "Consultations d'avocats gratuits (selon revenus)"
+                ],
+                "alternatives_strategiques": [
+                    "Négociation amiable avec l'autorité verbalisatrice (rare mais possible)",
+                    "Médiation préalable avec le service des contraventions", 
+                    "Contestation formelle (recommandé dans votre cas)",
+                    "Recours devant le tribunal en cas d'échec (dernière option)"
+                ],
+                "impact_preventif": "Conserver systématiquement les photos de signalisation, noter les conditions météo et de circulation, vérifier l'étalonnage des radars si concerné. Votre vigilance citoyenne protège vos droits futurs et contribue à un contrôle plus juste."
+            }
         },
         "travail": {
             "resume": [
