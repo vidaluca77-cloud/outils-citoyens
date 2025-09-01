@@ -2,6 +2,21 @@ import './globals.css'
 import { Metadata } from 'next'
 import { AppShell } from '../components/AppShell'
 
+// Client component for environment check
+function EnvironmentBanner() {
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE
+  
+  if (apiBase) {
+    return null
+  }
+
+  return (
+    <div className="bg-red-600 text-white p-3 text-center text-sm font-medium">
+      ⚠️ Configuration manquante: NEXT_PUBLIC_API_BASE n'est pas définie. Les fonctionnalités sont désactivées.
+    </div>
+  )
+}
+
 export default function RootLayout({children}:{children:React.ReactNode}) {
   return (
     <html lang='fr'>
@@ -23,6 +38,7 @@ export default function RootLayout({children}:{children:React.ReactNode}) {
         {/* Additional meta tags moved to metadata export */}
       </head>
       <body className="font-sans antialiased">
+        <EnvironmentBanner />
         <AppShell>
           {children}
         </AppShell>
