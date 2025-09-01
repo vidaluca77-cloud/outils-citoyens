@@ -163,7 +163,7 @@ def enhance_chat_response_with_legal_search(user_question: str, context: Dict[st
     """Enhance chat response with relevant legal information"""
     try:
         # Import legal search functionality
-        from legal.router import search_legal, LegalQueryIn
+        from api.legal.router import search_legal, LegalQueryIn
         
         # If the question seems legal, try to get relevant sources
         legal_keywords = ["droit", "loi", "article", "code", "juridique", "légal", "jurisprudence"]
