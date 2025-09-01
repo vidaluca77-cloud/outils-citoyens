@@ -9,7 +9,7 @@ from openai import OpenAI
 from typing import Dict, Any, List
 import logging
 from jinja2 import Template
-import api.prompting as prompting
+import prompting
 
 app = FastAPI(title="Outils Citoyens API")
 
@@ -19,12 +19,18 @@ app.add_middleware(
 )
 
 # Include chat router
-from api.chat import router as chat_router
-app.include_router(chat_router)
+try:
+    from chat import router as chat_router
+    app.include_router(chat_router)
+except ImportError:
+    logger.warning("Chat router not available")
 
-# Include legal router
-from api.legal.router import router as legal_router
-app.include_router(legal_router)
+# Include legal router  
+try:
+    from legal.router import router as legal_router
+    app.include_router(legal_router)
+except ImportError:
+    logger.warning("Legal router not available")
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

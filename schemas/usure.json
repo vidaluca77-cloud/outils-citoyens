@@ -1,35 +1,70 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Anti-Usure Bancaire",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Signalement taux usuraire",
+  "description": "Signalez un crédit à taux d'usure illégal",
   "type": "object",
   "properties": {
     "type_credit": {
       "type": "string",
+      "title": "Type de crédit",
       "enum": [
         "conso",
         "auto",
         "renouvelable",
-        "immo"
+        "immo",
+        "professionnel"
       ]
     },
-    "taux_annuel": {
-      "type": "number"
+    "taux_propose": {
+      "type": "number",
+      "title": "Taux annuel proposé (%)",
+      "description": "Taux d'intérêt annuel proposé par l'organisme"
     },
-    "assurance_emprunteur": {
-      "type": "number"
+    "organisme_preteur": {
+      "type": "string",
+      "title": "Organisme prêteur",
+      "description": "Nom de la banque ou organisme de crédit"
     },
-    "frais": {
-      "type": "number"
+    "montant_emprunte": {
+      "type": "number",
+      "title": "Montant emprunté (€)",
+      "description": "Montant du crédit proposé"
     },
     "date_offre": {
       "type": "string",
-      "description": "JJ/MM/AAAA"
+      "title": "Date de l'offre",
+      "description": "Date de l'offre de crédit (JJ/MM/AAAA)"
+    },
+    "identite": {
+      "type": "object",
+      "title": "Vos informations",
+      "properties": {
+        "nom": {
+          "type": "string",
+          "title": "Nom"
+        },
+        "prenom": {
+          "type": "string",
+          "title": "Prénom"
+        },
+        "adresse": {
+          "type": "string",
+          "title": "Adresse complète"
+        }
+      },
+      "required": [
+        "nom",
+        "prenom",
+        "adresse"
+      ]
     }
   },
   "required": [
     "type_credit",
-    "taux_annuel",
-    "date_offre"
+    "taux_propose",
+    "organisme_preteur",
+    "montant_emprunte",
+    "identite"
   ],
   "additionalProperties": false
 }

@@ -1,38 +1,74 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Je Me Défends à l’École",
+  "title": "Signalement scolaire",
+  "description": "Signalez un problème scolaire (harcèlement, violence, etc.)",
   "type": "object",
   "properties": {
-    "niveau": {
+    "niveau_scolaire": {
       "type": "string",
+      "title": "Niveau scolaire",
       "enum": [
         "college",
-        "lycee"
+        "lycee",
+        "elementaire"
       ]
     },
-    "type": {
+    "type_probleme": {
       "type": "string",
+      "title": "Type de problème",
       "enum": [
         "harcelement",
         "violence",
+        "discrimination",
+        "exclusion_abusive",
         "autre"
       ]
     },
-    "faits": {
-      "type": "string"
+    "description_faits": {
+      "type": "string",
+      "title": "Description des faits",
+      "description": "Décrivez précisément les événements"
     },
     "etablissement": {
-      "type": "string"
+      "type": "string",
+      "title": "Nom de l'établissement",
+      "description": "Nom complet de l'école/collège/lycée"
     },
-    "parents_contacts": {
-      "type": "string"
+    "date_faits": {
+      "type": "string",
+      "title": "Date des faits",
+      "description": "Date ou période des événements (JJ/MM/AAAA)"
+    },
+    "identite": {
+      "type": "object",
+      "title": "Informations du responsable légal",
+      "properties": {
+        "nom": {
+          "type": "string",
+          "title": "Nom"
+        },
+        "prenom": {
+          "type": "string",
+          "title": "Prénom"
+        },
+        "adresse": {
+          "type": "string",
+          "title": "Adresse complète"
+        }
+      },
+      "required": [
+        "nom",
+        "prenom",
+        "adresse"
+      ]
     }
   },
   "required": [
-    "niveau",
-    "type",
-    "faits",
-    "etablissement"
+    "niveau_scolaire",
+    "type_probleme",
+    "description_faits",
+    "etablissement",
+    "identite"
   ],
   "additionalProperties": false
 }

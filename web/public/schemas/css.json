@@ -1,39 +1,74 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Complémentaire Santé Solidaire",
+  "title": "Demande Complémentaire Santé Solidaire",
+  "description": "Demandez votre droit à la Complémentaire Santé Solidaire",
   "type": "object",
   "properties": {
-    "revenu_mensuel_net": {
-      "type": "number"
+    "revenu_mensuel": {
+      "type": "number",
+      "title": "Revenus mensuels nets (€)",
+      "description": "Revenus nets mensuels du foyer"
     },
-    "foyer": {
-      "type": "integer"
+    "composition_foyer": {
+      "type": "integer",
+      "title": "Nombre de personnes",
+      "description": "Nombre total de personnes dans le foyer"
     },
-    "age": {
-      "type": "integer"
+    "age_demandeur": {
+      "type": "integer",
+      "title": "Votre âge",
+      "description": "Âge du demandeur principal"
     },
-    "statut": {
+    "situation_professionnelle": {
       "type": "string",
+      "title": "Situation professionnelle",
       "enum": [
         "actif",
         "chomeur",
         "etudiant",
-        "retraite"
+        "retraite",
+        "autre"
       ]
     },
     "couverture_actuelle": {
       "type": "string",
+      "title": "Couverture santé actuelle",
       "enum": [
         "aucune",
         "mutuelle",
         "css",
         "ame"
       ]
+    },
+    "identite": {
+      "type": "object",
+      "title": "Vos informations",
+      "properties": {
+        "nom": {
+          "type": "string",
+          "title": "Nom"
+        },
+        "prenom": {
+          "type": "string",
+          "title": "Prénom"
+        },
+        "adresse": {
+          "type": "string",
+          "title": "Adresse complète"
+        }
+      },
+      "required": [
+        "nom",
+        "prenom",
+        "adresse"
+      ]
     }
   },
   "required": [
-    "revenu_mensuel_net",
-    "foyer"
+    "revenu_mensuel",
+    "composition_foyer",
+    "situation_professionnelle",
+    "identite"
   ],
   "additionalProperties": false
 }

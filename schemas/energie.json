@@ -1,31 +1,72 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Facture Énergie Juste",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Contestation facture énergie",
+  "description": "Contestez une facture d'énergie trop élevée ou abusive",
   "type": "object",
   "properties": {
     "fournisseur": {
-      "type": "string"
-    },
-    "offre": {
       "type": "string",
+      "title": "Fournisseur d'énergie",
+      "description": "Nom de votre fournisseur (EDF, Engie, etc.)"
+    },
+    "type_contrat": {
+      "type": "string",
+      "title": "Type de contrat",
       "enum": [
         "reglemente",
         "marche"
       ]
     },
-    "conso_kwh": {
-      "type": "number"
+    "montant_conteste": {
+      "type": "number",
+      "title": "Montant contesté (€)",
+      "description": "Montant de la facture que vous contestez"
     },
-    "montant_facture": {
-      "type": "number"
+    "motif_contestation": {
+      "type": "string",
+      "title": "Motif de contestation",
+      "description": "Pourquoi contestez-vous cette facture ?"
     },
-    "date": {
-      "type": "string"
+    "periode_facture": {
+      "type": "string",
+      "title": "Période de la facture",
+      "description": "Période concernée par la facture"
+    },
+    "numero_client": {
+      "type": "string",
+      "title": "Numéro client",
+      "description": "Votre numéro de client chez le fournisseur"
+    },
+    "identite": {
+      "type": "object",
+      "title": "Vos informations",
+      "properties": {
+        "nom": {
+          "type": "string",
+          "title": "Nom"
+        },
+        "prenom": {
+          "type": "string",
+          "title": "Prénom"
+        },
+        "adresse": {
+          "type": "string",
+          "title": "Adresse complète"
+        }
+      },
+      "required": [
+        "nom",
+        "prenom",
+        "adresse"
+      ]
     }
   },
   "required": [
     "fournisseur",
-    "montant_facture"
+    "montant_conteste",
+    "motif_contestation",
+    "numero_client",
+    "identite"
   ],
   "additionalProperties": false
 }

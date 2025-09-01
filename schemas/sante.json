@@ -1,13 +1,41 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Médecin Maintenant",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Accès aux soins médicaux",
+  "description": "Générez simplement votre demande d'accès aux soins médicaux",
   "type": "object",
   "properties": {
-    "code_postal": {
-      "type": "string"
+    "type_demande": {
+      "type": "string",
+      "title": "Type de demande",
+      "enum": [
+        "medecin_traitant",
+        "teleconsultation", 
+        "urgences",
+        "specialiste",
+        "autre"
+      ]
+    },
+    "ville": {
+      "type": "string",
+      "title": "Ville de résidence",
+      "description": "Ville où vous recherchez des soins"
+    },
+    "probleme": {
+      "type": "string",
+      "title": "Problème rencontré",
+      "description": "Décrivez les difficultés d'accès aux soins"
+    },
+    "urgence": {
+      "type": "string",
+      "title": "Caractère urgent",
+      "enum": [
+        "oui",
+        "non"
+      ]
     },
     "couverture": {
       "type": "string",
+      "title": "Couverture santé",
       "enum": [
         "ameli",
         "mutuelle",
@@ -16,18 +44,36 @@
         "aucune"
       ]
     },
-    "besoin": {
-      "type": "string",
-      "enum": [
-        "medecin_traitant",
-        "teleconsultation",
-        "urgences"
+    "identite": {
+      "type": "object",
+      "title": "Vos informations",
+      "properties": {
+        "nom": {
+          "type": "string",
+          "title": "Nom"
+        },
+        "prenom": {
+          "type": "string",
+          "title": "Prénom"
+        },
+        "adresse": {
+          "type": "string",
+          "title": "Adresse complète"
+        }
+      },
+      "required": [
+        "nom",
+        "prenom",
+        "adresse"
       ]
     }
   },
   "required": [
-    "code_postal",
-    "besoin"
+    "type_demande",
+    "ville",
+    "probleme",
+    "urgence",
+    "identite"
   ],
   "additionalProperties": false
 }

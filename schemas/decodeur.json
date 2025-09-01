@@ -1,27 +1,65 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Décodeur d’Administration",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Décodeur de courrier administratif",
+  "description": "Décryptez et répondez simplement à vos courriers administratifs",
   "type": "object",
   "properties": {
     "courrier_texte": {
-      "type": "string"
+      "type": "string",
+      "title": "Contenu du courrier",
+      "description": "Copiez ici le texte complet du courrier reçu"
     },
     "expediteur": {
       "type": "string",
+      "title": "Expéditeur du courrier",
       "enum": [
         "CAF",
         "Impots",
         "Prefecture",
+        "CPAM",
+        "Pole_Emploi",
         "Autre"
       ]
     },
-    "deadline_si_indiquee": {
-      "type": "string"
+    "date_reception": {
+      "type": "string",
+      "title": "Date de réception",
+      "description": "Date de réception du courrier (JJ/MM/AAAA)"
+    },
+    "deadline_indiquee": {
+      "type": "string",
+      "title": "Délai indiqué (optionnel)",
+      "description": "Délai de réponse mentionné dans le courrier"
+    },
+    "identite": {
+      "type": "object",
+      "title": "Vos informations",
+      "properties": {
+        "nom": {
+          "type": "string",
+          "title": "Nom"
+        },
+        "prenom": {
+          "type": "string",
+          "title": "Prénom"
+        },
+        "adresse": {
+          "type": "string",
+          "title": "Adresse complète"
+        }
+      },
+      "required": [
+        "nom",
+        "prenom",
+        "adresse"
+      ]
     }
   },
   "required": [
     "courrier_texte",
-    "expediteur"
+    "expediteur",
+    "date_reception",
+    "identite"
   ],
   "additionalProperties": false
 }
