@@ -29,24 +29,25 @@ def test_amendes_feu_rouge_masque():
     }
     
     # Generate response
-    result = main.get_mock_response("amendes", test_data)
+    result = main.generate_mock_response("amendes", test_data)
     
     # Verify structure
-    assert "resume" in result
-    assert "lettre" in result  
-    assert "checklist" in result
-    assert "mentions" in result
+    assert hasattr(result, 'resume')
+    assert hasattr(result, 'lettre')
+    assert hasattr(result, 'checklist')
+    assert hasattr(result, 'mentions')
     
-    # Verify letter is rendered as string
-    assert "rendered_letter" in result, "Should have rendered_letter field"
-    assert isinstance(result["rendered_letter"], str)
+    # Verify letter structure
+    letter = result.lettre
+    assert hasattr(letter, 'corps'), "Letter should have corps field"
+    assert isinstance(letter.corps, str)
     
     # Verify key elements are present in letter
-    letter = result["rendered_letter"]
-    assert "12345678" in letter, "PV number should be in letter"
-    assert "15/03/2024" in letter, "Date should be in letter"
-    assert "Avenue de la République, Paris 11e" in letter, "Location should be in letter"
-    assert "masqué par travaux" in letter, "Motif should be in letter"
+    letter_text = letter.corps
+    assert "12345678" in letter_text, "PV number should be in letter"
+    assert "15/03/2024" in letter_text, "Date should be in letter"
+    assert "Avenue de la République, Paris 11e" in letter_text, "Location should be in letter"
+    assert "masqué par travaux" in letter_text, "Motif should be in letter"
     
     # Verify LRAR mention in resume
     resume_text = " ".join(result["resume"])
@@ -77,16 +78,17 @@ def test_caf_suspension_apl():
     }
     
     # Generate response
-    result = main.get_mock_response("caf", test_data)
+    result = main.generate_mock_response("caf", test_data)
     
     # Verify structure
-    assert "resume" in result
-    assert "lettre" in result
-    assert "checklist" in result
-    assert "mentions" in result
+    assert hasattr(result, 'resume')
+    assert hasattr(result, 'lettre')
+    assert hasattr(result, 'checklist')
+    assert hasattr(result, 'mentions')
     
-    # Verify letter is rendered as string
-    assert isinstance(result["lettre"], str)
+    # Verify letter structure
+    letter = result.lettre
+    assert isinstance(letter.corps, str)
     
     # Verify key elements are present
     letter = result["lettre"]
@@ -107,8 +109,8 @@ def test_resume_length():
     test_data = {"identite": {"nom": "Test", "prenom": "User"}}
     
     for tool_id in ["amendes", "caf", "loyers"]:
-        result = main.get_mock_response(tool_id, test_data)
-        resume = result["resume"]
+        result = main.generate_mock_response(tool_id, test_data)
+        resume = result.resume
         
         assert isinstance(resume, list), f"Resume should be a list for {tool_id}"
         assert 4 <= len(resume) <= 10, f"Resume should have 4-10 items for {tool_id}, got {len(resume)}"
@@ -125,8 +127,8 @@ def test_checklist_length():
     test_data = {"identite": {"nom": "Test", "prenom": "User"}}
     
     for tool_id in ["amendes", "caf", "loyers"]:
-        result = main.get_mock_response(tool_id, test_data)
-        checklist = result["checklist"]
+        result = main.generate_mock_response(tool_id, test_data)
+        checklist = result.checklist
         
         assert isinstance(checklist, list), f"Checklist should be a list for {tool_id}"
         assert 3 <= len(checklist) <= 8, f"Checklist should have 3-8 items for {tool_id}, got {len(checklist)}"
@@ -137,8 +139,8 @@ def test_mentions_content():
     test_data = {"identite": {"nom": "Test", "prenom": "User"}}
     
     for tool_id in ["amendes", "caf", "loyers"]:
-        result = main.get_mock_response(tool_id, test_data)
-        mentions = result["mentions"]
+        result = main.generate_mock_response(tool_id, test_data)
+        mentions = result.mentions
         
         assert isinstance(mentions, str), f"Mentions should be a string for {tool_id}"
         assert len(mentions) > 50, f"Mentions should be substantial for {tool_id}"
@@ -155,13 +157,13 @@ def test_generic_fallback():
         "test_field": "test_value"
     }
     
-    result = main.get_mock_response("nonexistent_tool", test_data)
+    result = main.generate_mock_response("nonexistent_tool", test_data)
     
     # Should still return proper structure
-    assert "resume" in result
-    assert "lettre" in result
-    assert "checklist" in result  
-    assert "mentions" in result
+    assert hasattr(result, 'resume')
+    assert hasattr(result, 'lettre')
+    assert hasattr(result, 'checklist')
+    assert hasattr(result, 'mentions')
 
 def test_letter_structure_consistency():
     """Test that all letters have consistent structure"""
@@ -174,10 +176,10 @@ def test_letter_structure_consistency():
     tools_to_test = ["amendes", "caf", "loyers", "travail", "sante", "energie"]
     
     for tool_id in tools_to_test:
-        result = main.get_mock_response(tool_id, test_data)
-        letter = result["lettre"]
+        result = main.generate_mock_response(tool_id, test_data)
+        letter = result.lettre
         
-        assert isinstance(letter, str), f"Letter should be string for {tool_id}"
+        assert isinstance(letter.corps, str), f"Letter corps should be string for {tool_id}"
         
         # Check required sections
         required_sections = ["DESTINATAIRE:", "OBJET:", "CORPS:", "PIÈCES JOINTES:", "SIGNATURE:"]
