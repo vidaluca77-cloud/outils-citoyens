@@ -121,7 +121,7 @@ function FormField({
               { value: '', label: 'Saisie libre (sans modèle)' },
               ...fieldDef.enum.filter(option => option !== '').map((option: string) => {
                 // Find model details from schema
-                const modeles = (window as any).currentSchema?.['x-modeles'] || []
+                const modeles = (window as any).currentSchema?.['x-options']?.modeles || (window as any).currentSchema?.['x-modeles'] || []
                 const modele = modeles.find((m: any) => m.id === option)
                 return {
                   value: option,
@@ -335,8 +335,9 @@ export function ToolPageClient({ params }: { params: { id: string } }) {
   
   // Auto-set destinataire when model is selected
   useEffect(() => {
-    if (values.modele_id && schema?.['x-modeles'] && !values.destinataire_id) {
-      const selectedModele = schema['x-modeles']?.find((m: any) => m.id === values.modele_id)
+    if (values.modele_id && schema && !values.destinataire_id) {
+      const modeles = schema['x-options']?.modeles || schema['x-modeles'] || []
+      const selectedModele = modeles.find((m: any) => m.id === values.modele_id)
       if (selectedModele?.destinataire_default) {
         setValues(prev => ({ ...prev, destinataire_id: selectedModele.destinataire_default }))
       }
@@ -397,6 +398,55 @@ export function ToolPageClient({ params }: { params: { id: string } }) {
         // Re-throw the error if we've exhausted retries or it's not a network error
         throw error
       }
+    }
+  }
+
+  // Generate preview of letter based on current form values
+  const generatePreview = () => {
+    if (!values.modele_id || !schema) return null
+    
+    const modeles = schema['x-options']?.modeles || schema['x-modeles'] || []
+    const selectedModele = modeles.find((m: any) => m.id === values.modele_id)
+    if (!selectedModele) return null
+    
+    try {
+      // Simple template replacement for preview
+      let previewObjet = selectedModele.objet
+      let previewCorps = selectedModele.corps
+      
+      // Replace basic placeholders
+      const replacements = {
+        numero_process_verbal: values.numero_process_verbal || '[Numéro PV]',
+        date_infraction: values.date_infraction || '[Date]',
+        lieu: values.lieu || '[Lieu]',
+        motif_contestation: values.motif_contestation || '[Motif de contestation]',
+        type_amende: values.type_amende || '[Type d\'amende]',
+        prenom: values.identite?.prenom || '[Prénom]',
+        nom: values.identite?.nom || '[Nom]',
+        adresse: values.identite?.adresse || '[Adresse]'
+      }
+      
+      // Simple replacement (not full Jinja2)
+      Object.entries(replacements).forEach(([key, value]) => {
+        const regex = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'g')
+        previewObjet = previewObjet.replace(regex, value)
+        previewCorps = previewCorps.replace(regex, value)
+      })
+      
+      // Get destinataire bloc
+      const destinataireId = values.destinataire_id || selectedModele.destinataire_default
+      const destinataireOptions = schema['x-options']?.destinataire_options || []
+      const destinataire = destinataireOptions.find((d: any) => d.id === destinataireId)
+      const destinataireBloc = destinataire?.bloc || 'Service compétent\n[Adresse à compléter]'
+      
+      return {
+        destinataire_bloc: destinataireBloc,
+        objet: previewObjet,
+        corps: previewCorps
+      }
+    } catch (error) {
+      console.error('Preview generation error:', error)
+      return null
     }
   }
 
@@ -510,8 +560,8 @@ ${lettre.signature}`
 
   if (!schema) {
     return (
-      <div className="page-container">
-        <div className="content-container">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8">
+        <div className="container max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-center min-h-64">
             <div className="text-center">
               <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
@@ -533,11 +583,11 @@ ${lettre.signature}`
         }}
       />
       
-      <div className="page-container">
-        <div className="content-container">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8">
+        <div className="container max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <Link href="/" className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-xl font-medium transition-all duration-200 hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2" aria-label="Retour à la liste des outils">
+          <Link href="/" className="inline-flex items-center px-4 py-2 bg-white/80 backdrop-blur-sm text-gray-700 rounded-xl font-medium transition-all duration-200 hover:bg-white hover:shadow-lg focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" aria-label="Retour à la liste des outils">
             <span className="mr-2">←</span>
             Retour aux outils
           </Link>
@@ -549,10 +599,10 @@ ${lettre.signature}`
 
         {/* Tool Title */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 bg-clip-text text-transparent mb-4">
+          <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 bg-clip-text text-transparent mb-4">
             {schema.title}
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-600">
             Remplissez le formulaire ci-dessous pour générer automatiquement votre document personnalisé.
           </p>
         </div>
@@ -575,7 +625,7 @@ ${lettre.signature}`
               
               {/* Dynamic placeholder fields based on selected model */}
               {values.modele_id && (() => {
-                const modeles = schema['x-modeles'] || []
+                const modeles = schema['x-options']?.modeles || schema['x-modeles'] || []
                 const selectedModele = modeles.find((m: any) => m.id === values.modele_id)
                 if (selectedModele && selectedModele.placeholders) {
                   return (
@@ -595,6 +645,40 @@ ${lettre.signature}`
                             />
                           </Field>
                         ))}
+                      </div>
+                    </Card>
+                  )
+                }
+                return null
+              })()}
+              
+              {/* Letter Preview */}
+              {values.modele_id && (() => {
+                const preview = generatePreview()
+                if (preview) {
+                  return (
+                    <Card title="Aperçu de votre lettre" icon="👁️">
+                      <div className="bg-gray-50 border-2 border-gray-200 rounded-xl p-6 font-mono text-sm space-y-4">
+                        <div>
+                          <div className="font-bold text-gray-700 mb-2">Destinataire :</div>
+                          <div className="whitespace-pre-line text-gray-800">{preview.destinataire_bloc}</div>
+                        </div>
+                        
+                        <div>
+                          <div className="font-bold text-gray-700 mb-2">Objet :</div>
+                          <div className="text-gray-800 font-semibold">{preview.objet}</div>
+                        </div>
+                        
+                        <div>
+                          <div className="font-bold text-gray-700 mb-2">Corps de la lettre :</div>
+                          <div className="whitespace-pre-line text-gray-800 leading-relaxed max-h-64 overflow-y-auto">{preview.corps}</div>
+                        </div>
+                      </div>
+                      <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-sm text-blue-700">
+                          <span className="font-semibold">💡 Conseil :</span> Ceci est un aperçu basé sur le modèle sélectionné. 
+                          La lettre finale sera optimisée et perfectionnée lors de la génération.
+                        </p>
                       </div>
                     </Card>
                   )

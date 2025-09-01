@@ -4,6 +4,18 @@
   "description": "Générez simplement votre lettre de contestation d'amende",
   "type": "object",
   "properties": {
+    "modele_id": {
+      "type": "string",
+      "title": "Modèle de lettre",
+      "description": "Choisissez un modèle prêt à l'emploi",
+      "enum": ["", "stationnement_payant", "vitesse_radar_defaillant", "contestation_generale"]
+    },
+    "destinataire_id": {
+      "type": "string",
+      "title": "Destinataire",
+      "description": "Organisme compétent pour traiter votre contestation",
+      "enum": ["", "prefecture", "antai", "ots"]
+    },
     "type_amende": {
       "type": "string",
       "title": "Type d'infraction",
@@ -32,6 +44,14 @@
       "type": "string",
       "title": "Motif de contestation",
       "description": "Expliquez pourquoi vous contestez cette amende"
+    },
+    "pieces_suggerees": {
+      "type": "array",
+      "title": "Pièces jointes",
+      "description": "Documents à joindre à votre contestation",
+      "items": {
+        "type": "string"
+      }
     },
     "identite": {
       "type": "object",
@@ -65,5 +85,80 @@
     "motif_contestation",
     "identite"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "x-options": {
+    "destinataire_options": [
+      {
+        "id": "prefecture",
+        "label": "Préfecture du département",
+        "bloc": "Monsieur le Préfet\nPréfecture de [DÉPARTEMENT]\nService des Contraventions\n[ADRESSE PRÉFECTURE]"
+      },
+      {
+        "id": "antai",
+        "label": "ANTAI (Agence Nationale de Traitement Automatisé des Infractions)",
+        "bloc": "ANTAI\nCS 41101\n35911 RENNES CEDEX 9"
+      },
+      {
+        "id": "ots",
+        "label": "OTS (Officier du Ministère Public)",
+        "bloc": "Monsieur l'Officier du Ministère Public\nTribunal de Police\n[ADRESSE TRIBUNAL]"
+      }
+    ],
+    "type_amende_options": [
+      {
+        "id": "stationnement",
+        "label": "Stationnement irrégulier",
+        "description": "Amende pour stationnement non autorisé, dépassement de durée, etc."
+      },
+      {
+        "id": "vitesse",
+        "label": "Excès de vitesse",
+        "description": "Dépassement de la vitesse autorisée"
+      },
+      {
+        "id": "autre",
+        "label": "Autre infraction",
+        "description": "Autres types d'infractions au code de la route"
+      }
+    ],
+    "pieces_suggerees": [
+      "Copie du procès-verbal de contravention",
+      "Copie de la carte grise du véhicule",
+      "Copie du permis de conduire",
+      "Photos de la situation au moment de l'infraction",
+      "Témoignages écrits et signés",
+      "Ticket de stationnement (si applicable)",
+      "Justificatifs médicaux (si applicable)",
+      "Tout document prouvant votre contestation"
+    ],
+    "modeles": [
+      {
+        "id": "stationnement_payant",
+        "label": "Stationnement payant valide",
+        "objet": "Contestation formelle du procès-verbal n° {{ numero_process_verbal }} - Stationnement payant valide - Art. L121-3 du Code de la route",
+        "corps": "Monsieur le Préfet,\n\nJe vous adresse la présente lettre pour contester formellement le procès-verbal de contravention n° {{ numero_process_verbal }} dressé le {{ date_infraction }} à {{ lieu }}.\n\nLes faits reprochés :\n{{ motif_contestation }}\n\nJe conteste cette verbalisation car j'étais en situation de stationnement payant valide au moment des faits. Cette contestation est fondée sur l'article L121-3 du Code de la route qui prévoit la possibilité de contester une contravention lorsque les éléments constitutifs de l'infraction ne sont pas réunis.\n\nÀ l'appui de ma contestation, je joins les pièces justificatives démontrant la validité de mon stationnement.\n\nJe vous demande donc l'annulation pure et simple de cette contravention.\n\nJe vous prie d'agréer, Monsieur le Préfet, l'expression de mes salutations respectueuses.",
+        "placeholders": ["numero_process_verbal", "date_infraction", "lieu", "motif_contestation"],
+        "destinataire_default": "prefecture",
+        "template_hint": "Stationnement payant avec ticket valide"
+      },
+      {
+        "id": "vitesse_radar_defaillant",
+        "label": "Radar défaillant ou masqué",
+        "objet": "Contestation formelle du procès-verbal n° {{ numero_process_verbal }} - Défaillance technique du radar - Art. L121-3 du Code de la route",
+        "corps": "Monsieur le Préfet,\n\nJe vous adresse la présente lettre pour contester formellement le procès-verbal de contravention n° {{ numero_process_verbal }} dressé le {{ date_infraction }} à {{ lieu }}.\n\nLes faits reprochés :\n{{ motif_contestation }}\n\nJe conteste cette verbalisation car {{ motif_contestation }}. Cette contestation est fondée sur l'article L121-3 du Code de la route et l'article 537 du Code de procédure pénale qui prévoient la nullité des procédures entachées de vices de forme ou de fond.\n\nL'infraction n'est pas caractérisée en raison de la défaillance du dispositif de contrôle automatique ou de conditions de signalisation non conformes.\n\nÀ l'appui de ma contestation, je joins les éléments de preuve attestant de ces dysfonctionnements.\n\nJe vous demande donc l'annulation pure et simple de cette contravention.\n\nJe vous prie d'agréer, Monsieur le Préfet, l'expression de mes salutations respectueuses.",
+        "placeholders": ["numero_process_verbal", "date_infraction", "lieu", "motif_contestation"],
+        "destinataire_default": "antai",
+        "template_hint": "Radar défaillant, masqué ou mal signalé"
+      },
+      {
+        "id": "contestation_generale",
+        "label": "Contestation générale",
+        "objet": "Contestation formelle du procès-verbal n° {{ numero_process_verbal }} - {{ type_amende|title }} - Art. L121-3 du Code de la route",
+        "corps": "Monsieur le Préfet,\n\nJe vous adresse la présente lettre pour contester formellement le procès-verbal de contravention n° {{ numero_process_verbal }} dressé le {{ date_infraction }} à {{ lieu }}.\n\nMotif de ma contestation :\n{{ motif_contestation }}\n\nCette contestation est fondée sur l'article L121-3 du Code de la route qui permet de contester une contravention lorsque les éléments constitutifs de l'infraction ne sont pas établis ou en cas de vice de procédure.\n\nLes circonstances particulières de cette situation démontrent que l'infraction reprochée n'est pas constituée ou que la procédure de verbalisation est entachée d'irrégularité.\n\nÀ l'appui de ma contestation, je joins les pièces justificatives nécessaires à l'examen de mon dossier.\n\nJe vous demande donc l'annulation pure et simple de cette contravention et vous prie d'agréer, Monsieur le Préfet, l'expression de mes salutations respectueuses.",
+        "placeholders": ["numero_process_verbal", "date_infraction", "lieu", "motif_contestation", "type_amende"],
+        "destinataire_default": "prefecture",
+        "template_hint": "Modèle polyvalent pour tout type de contestation"
+      }
+    ]
+  }
 }

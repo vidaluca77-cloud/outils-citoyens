@@ -1,17 +1,16 @@
-DESTINATAIRE: {{ destinataire or "Service compétent" }}
-{{ destinataire_adresse or "" }}
+{{ destinataire_bloc or "Service compétent" }}
 
-OBJET: {{ objet or ("Courrier – " + tool_id|upper) }}
+OBJET: {{ objet or ("Courrier – " + (tool_id|upper if tool_id else "DEMANDE")) }}
 
-CORPS:
-{{ corps }}
+{{ corps or "Corps de la lettre..." }}
 
 PIÈCES JOINTES:
 {% for pj in pieces_jointes -%}
 - {{ pj }}
+{% else -%}
+- Document de référence
 {% endfor %}
 
-SIGNATURE:
 {% if identite -%}
 {{ identite.prenom }} {{ identite.nom }}
 {{ identite.adresse }}
@@ -20,7 +19,7 @@ SIGNATURE:
 [Votre adresse complète]
 {%- endif %}
 
-Fait à [Ville], le [Date]
+Fait le {{ date_courrier or "[Date du jour]" }}
 
 ---
 Lettre générée automatiquement – à relire avant envoi.

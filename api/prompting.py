@@ -208,8 +208,11 @@ def build_from_modele(schema: Dict[str, Any], payload: Dict[str, Any]) -> Dict[s
     if not modele_id:
         return None
         
-    # Find the model in schema
-    modeles = schema.get('x-modeles', [])
+    # Find the model in schema - look for both x-modeles and x-options.modeles
+    modeles = schema.get('x-options', {}).get('modeles', [])
+    if not modeles:
+        modeles = schema.get('x-modeles', [])
+        
     modele = None
     for m in modeles:
         if m['id'] == modele_id:
@@ -260,7 +263,7 @@ def build_from_modele(schema: Dict[str, Any], payload: Dict[str, Any]) -> Dict[s
     # Build response structure
     response = {
         "resume": [
-            f"Préparer la contestation basée sur : {modele['template_hint']}",
+            f"Préparer la contestation basée sur : {modele.get('template_hint', 'le modèle sélectionné')}",
             "Rassembler tous les documents justificatifs",
             "Vérifier les délais de contestation (45 jours)",
             "Envoyer en lettre recommandée avec accusé de réception",
@@ -289,11 +292,20 @@ def get_destinataire_bloc(destinataire_id: str, schema: Dict[str, Any]) -> str:
     """Get destinataire address bloc based on ID"""
     if not destinataire_id:
         return "Service compétent\n[Adresse à compléter]"
-        
+    
+    # Look for destinataire options in schema first
+    destinataire_options = schema.get('x-options', {}).get('destinataire_options', [])
+    for dest in destinataire_options:
+        if dest['id'] == destinataire_id:
+            return dest['bloc']
+    
+    # Fallback to hardcoded mapping
     destinataire_map = {
         "tribunal_police": "Monsieur l'Officier du Ministère Public\nTribunal de Police\nService des Contraventions\n[Adresse du tribunal]",
         "antai": "ANTAI\nService de Contestation\nCS 41101\n35911 RENNES CEDEX 9",
-        "officier_mp": "Monsieur l'Officier du Ministère Public\nTribunal de Police\n[Adresse du tribunal]"
+        "officier_mp": "Monsieur l'Officier du Ministère Public\nTribunal de Police\n[Adresse du tribunal]",
+        "prefecture": "Monsieur le Préfet\nPréfecture de [DÉPARTEMENT]\nService des Contraventions\n[ADRESSE PRÉFECTURE]",
+        "ots": "Monsieur l'Officier du Ministère Public\nTribunal de Police\n[ADRESSE TRIBUNAL]"
     }
     
     return destinataire_map.get(destinataire_id, "Service compétent\n[Adresse à compléter]")

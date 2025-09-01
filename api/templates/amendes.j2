@@ -1,27 +1,17 @@
-DESTINATAIRE: Monsieur l'Officier du Ministère Public
-Tribunal de Police
-Service des Contraventions
+{{ destinataire_bloc or "Monsieur l'Officier du Ministère Public\nTribunal de Police\nService des Contraventions" }}
 
-OBJET: Contestation formelle du procès-verbal n° {{ numero_process_verbal or "[Numéro PV]" }} - {{ type_amende or "infraction" }} - Art. L121-3 du Code de la route
+OBJET: {{ objet or ("Contestation formelle du procès-verbal n° " + (numero_process_verbal or "[Numéro PV]") + " - " + (type_amende or "infraction") + " - Art. L121-3 du Code de la route") }}
 
-CORPS:
-Monsieur l'Officier du Ministère Public,
-
-J'ai l'honneur de porter à votre connaissance ma contestation formelle du procès-verbal n° {{ numero_process_verbal or "[Numéro PV]" }} dressé le {{ date_infraction or "[Date]" }} pour {{ type_amende or "infraction" }} sur la voie publique sise {{ lieu or "[Lieu de l'infraction]" }}.
-
-Après examen attentif des circonstances de fait et de droit, je conteste cette verbalisation pour les motifs juridiques suivants :
-
-{{ motif_contestation or "[Motif de contestation]" }}
-
-En conséquence, et conformément aux dispositions de l'article 530 du Code de procédure pénale, je sollicite respectueusement l'annulation pure et simple de cette contravention.
-
-Dans l'attente de votre décision motivée, je vous prie d'agréer, Monsieur l'Officier du Ministère Public, l'expression de ma haute considération.
+{{ corps or ("Monsieur,\n\nJ'ai l'honneur de porter à votre connaissance ma contestation formelle du procès-verbal n° " + (numero_process_verbal or "[Numéro PV]") + " dressé le " + (date_infraction or "[Date]") + " pour " + (type_amende or "infraction") + " sur la voie publique sise " + (lieu or "[Lieu de l'infraction]") + ".\n\nAprès examen attentif des circonstances de fait et de droit, je conteste cette verbalisation pour les motifs juridiques suivants :\n\n" + (motif_contestation or "[Motif de contestation]") + "\n\nEn conséquence, et conformément aux dispositions de l'article 530 du Code de procédure pénale, je sollicite respectueusement l'annulation pure et simple de cette contravention.\n\nDans l'attente de votre décision motivée, je vous prie d'agréer, Monsieur, l'expression de ma haute considération.") }}
 
 PIÈCES JOINTES:
-- Copie du procès-verbal
+{% for pj in pieces_jointes -%}
+- {{ pj }}
+{% else -%}
+- Copie du procès-verbal de contravention
 - Justificatifs de bonne foi (si applicables)
+{% endfor %}
 
-SIGNATURE:
 {% if identite -%}
 {{ identite.prenom }} {{ identite.nom }}
 {{ identite.adresse }}
