@@ -23,16 +23,37 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
 }
 
 export function Field({ label, error, required, children, className }: FieldProps) {
+  // Generate unique IDs for accessibility
+  const fieldId = React.useMemo(() => `field-${Math.random().toString(36).substr(2, 9)}`, [])
+  const errorId = React.useMemo(() => `error-${Math.random().toString(36).substr(2, 9)}`, [])
+  
   return (
     <div className={cn('stack', className)}>
-      <label className="block text-sm font-medium text-foreground">
+      <label 
+        htmlFor={fieldId}
+        className="block text-sm font-medium text-foreground"
+      >
         {label}
-        {required && <span className="text-destructive ml-1">*</span>}
+        {required && (
+          <span className="text-destructive ml-1" aria-label="obligatoire">
+            *
+          </span>
+        )}
       </label>
-      {children}
+      {React.cloneElement(children as React.ReactElement, {
+        id: fieldId,
+        'aria-describedby': error ? errorId : undefined,
+        'aria-invalid': error ? 'true' : 'false',
+        'aria-required': required ? 'true' : 'false'
+      })}
       {error && (
-        <p className="text-sm text-destructive flex items-center">
-          <span className="mr-1">⚠️</span>
+        <p 
+          id={errorId}
+          className="text-sm text-destructive flex items-center"
+          role="alert"
+          aria-live="polite"
+        >
+          <span className="mr-1" aria-hidden="true">⚠️</span>
           {error}
         </p>
       )}
@@ -45,7 +66,8 @@ export function Input({ className, error, onChange, ...props }: InputProps & { o
     <input
       className={cn(
         'w-full px-3 py-2 bg-background border border-input rounded-md text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
-        error && 'border-destructive',
+        'focus:border-ring transition-colors duration-200',
+        error && 'border-destructive focus:border-destructive',
         className
       )}
       onChange={(e) => onChange?.(e.target.value)}

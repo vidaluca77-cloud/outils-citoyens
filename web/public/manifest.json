@@ -1,12 +1,15 @@
 {
-  "name": "Outils Citoyens",
+  "name": "Outils Citoyens — Générateur de courriers administratifs",
   "short_name": "Outils Citoyens",
-  "description": "12 outils gratuits pour générer des lettres et procédures administratives",
+  "description": "12 outils gratuits pour générer vos lettres administratives et démarches citoyennes en France",
   "theme_color": "#0B0D12",
-  "background_color": "#0B0D12",
+  "background_color": "#ffffff",
   "display": "standalone",
   "start_url": "/",
   "scope": "/",
+  "orientation": "portrait-primary",
+  "lang": "fr",
+  "categories": ["government", "utilities", "productivity"],
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -19,6 +22,29 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Contestation d'amende",
+      "short_name": "Amendes",
+      "description": "Contester une amende rapidement",
+      "url": "/outil/amendes",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Démarches CAF",
+      "short_name": "CAF", 
+      "description": "Courriers et réclamations CAF",
+      "url": "/outil/caf",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Assistant juridique",
+      "short_name": "Assistant",
+      "description": "Obtenir des conseils personnalisés",
+      "url": "/assistant",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

@@ -1,6 +1,8 @@
 import './globals.css'
 import { Metadata } from 'next'
 import { AppShell } from '../components/AppShell'
+import Script from 'next/script'
+
 // Client component for environment check
 function EnvironmentBanner() {
   const apiBase = process.env.NEXT_PUBLIC_API_BASE
@@ -15,9 +17,47 @@ function EnvironmentBanner() {
   )
 }
 export default function RootLayout({children}:{children:React.ReactNode}) {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Outils Citoyens",
+    "description": "12 outils gratuits pour générer vos lettres administratives et démarches citoyennes en France",
+    "url": "https://outils-citoyens.vercel.app",
+    "applicationCategory": "GovernmentApplication",
+    "operatingSystem": "Any",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "EUR"
+    },
+    "featureList": [
+      "Contestation d'amendes",
+      "Demandes d'aides CAF",
+      "Problèmes de loyer",
+      "Questions de travail",
+      "Démarches de santé",
+      "Factures d'énergie",
+      "Assistant juridique intelligent"
+    ],
+    "creator": {
+      "@type": "Organization",
+      "name": "Outils Citoyens"
+    },
+    "inLanguage": "fr-FR",
+    "isAccessibleForFree": true
+  };
+
   return (
     <html lang='fr'>
       <head>
+        {/* Structured Data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(structuredData),
+          }}
+        />
+        
         {/* PWA Meta Tags */}
         <meta name="theme-color" content="#0B0D12" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -35,6 +75,28 @@ export default function RootLayout({children}:{children:React.ReactNode}) {
         {/* Additional meta tags moved to metadata export */}
       </head>
       <body className="font-sans antialiased">
+        <Script
+          id="register-sw"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js')
+                  .then(function(registration) {
+                    console.log('SW registered: ', registration);
+                  })
+                  .catch(function(registrationError) {
+                    console.log('SW registration failed: ', registrationError);
+                  });
+              }
+              
+              // Initialize Web Vitals
+              import('/src/lib/webVitals.js').then(({ initWebVitals }) => {
+                initWebVitals();
+              });
+            `,
+          }}
+        />
         <EnvironmentBanner/>
         <AppShell>
           {children}

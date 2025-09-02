@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 import json
@@ -11,10 +11,15 @@ import logging
 from jinja2 import Template
 import re
 import prompting
+from collections import defaultdict
+from datetime import datetime, timedelta
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Simple rate limiting
+rate_limit_store = defaultdict(list)
 
 app = FastAPI(title="Outils Citoyens API")
 
@@ -46,8 +51,59 @@ class Output(BaseModel):
 class GenerateRequest(BaseModel):
     tool_id: str
     fields: Dict[str, Any]
+    
+    class Config:
+        # Add validation
+        max_anystr_length = 10000  # Limit string length
+        validate_assignment = True
+        
+    def __init__(self, **data):
+        # Sanitize inputs
+        if 'fields' in data:
+            data['fields'] = self._sanitize_fields(data['fields'])
+        super().__init__(**data)
+    
+    def _sanitize_fields(self, fields: Dict[str, Any]) -> Dict[str, Any]:
+        """Sanitize input fields to prevent injection attacks"""
+        sanitized = {}
+        for key, value in fields.items():
+            if isinstance(value, str):
+                # Remove dangerous characters and limit length
+                value = value.strip()[:5000]  # Limit to 5000 chars
+                # Remove script tags and other dangerous content
+                value = re.sub(r'<script[^>]*>.*?</script>', '', value, flags=re.IGNORECASE | re.DOTALL)
+                value = re.sub(r'javascript:', '', value, flags=re.IGNORECASE)
+                sanitized[key] = value
+            elif isinstance(value, dict):
+                sanitized[key] = self._sanitize_fields(value)
+            elif isinstance(value, list):
+                sanitized[key] = [
+                    item.strip()[:1000] if isinstance(item, str) else item 
+                    for item in value[:50]  # Limit array size
+                ]
+            else:
+                sanitized[key] = value
+        return sanitized
 
 # Utility functions
+def check_rate_limit(client_ip: str, max_requests: int = 60, window_minutes: int = 5) -> bool:
+    """Simple rate limiting: max_requests per window_minutes per IP"""
+    now = datetime.now()
+    window_start = now - timedelta(minutes=window_minutes)
+    
+    # Clean old entries
+    rate_limit_store[client_ip] = [
+        timestamp for timestamp in rate_limit_store[client_ip]
+        if timestamp > window_start
+    ]
+    
+    # Check if under limit
+    if len(rate_limit_store[client_ip]) >= max_requests:
+        return False
+    
+    # Add current request
+    rate_limit_store[client_ip].append(now)
+    return True
 def remove_emojis(text: str) -> str:
     """Remove emojis from text"""
     emoji_pattern = re.compile("["
@@ -156,15 +212,28 @@ async def health():
     return {"ok": True}
 
 @app.post("/generate", response_model=Output)
-async def generate_document(request: GenerateRequest):
+async def generate_document(request: GenerateRequest, req: Request):
     """Generate document based on tool_id and fields"""
+    # Rate limiting
+    client_ip = req.client.host if req.client else "unknown"
+    if not check_rate_limit(client_ip):
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Please try again later.")
+    
     try:
         tool_id = request.tool_id
         fields = request.fields
         
+        # Validate tool_id
+        valid_tools = ["amendes", "caf", "loyers", "travail", "sante", "energie", "expulsions", "css", "ecole", "decodeur", "usure", "aides"]
+        if tool_id not in valid_tools:
+            logger.warning(f"Invalid tool_id requested: {tool_id}")
+            raise HTTPException(status_code=400, detail=f"Invalid tool_id. Must be one of: {', '.join(valid_tools)}")
+        
         # Special handling for work tool
         if tool_id == "travail":
             fields = format_work_fields(fields)
+        
+        logger.info(f"Generating document for tool: {tool_id}")
         
         # Generate base content using OpenAI
         if client:
@@ -177,9 +246,12 @@ async def generate_document(request: GenerateRequest):
         
         return result
         
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise  
     except Exception as e:
-        logger.error(f"Error generating document: {str(e)}")
-        raise HTTPException(status_code=500, detail="Error generating document")
+        logger.error(f"Unexpected error generating document: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error. Please try again later.")
 
 async def generate_with_openai(tool_id: str, fields: Dict[str, Any]) -> Output:
     """Generate content using OpenAI"""
