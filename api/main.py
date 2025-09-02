@@ -223,9 +223,17 @@ async def generate_document(request: GenerateRequest, req: Request):
         tool_id = request.tool_id
         fields = request.fields
         
+        # Validate tool_id
+        valid_tools = ["amendes", "caf", "loyers", "travail", "sante", "energie", "expulsions", "css", "ecole", "decodeur", "usure", "aides"]
+        if tool_id not in valid_tools:
+            logger.warning(f"Invalid tool_id requested: {tool_id}")
+            raise HTTPException(status_code=400, detail=f"Invalid tool_id. Must be one of: {', '.join(valid_tools)}")
+        
         # Special handling for work tool
         if tool_id == "travail":
             fields = format_work_fields(fields)
+        
+        logger.info(f"Generating document for tool: {tool_id}")
         
         # Generate base content using OpenAI
         if client:
@@ -238,9 +246,12 @@ async def generate_document(request: GenerateRequest, req: Request):
         
         return result
         
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise  
     except Exception as e:
-        logger.error(f"Error generating document: {str(e)}")
-        raise HTTPException(status_code=500, detail="Error generating document")
+        logger.error(f"Unexpected error generating document: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error. Please try again later.")
 
 async def generate_with_openai(tool_id: str, fields: Dict[str, Any]) -> Output:
     """Generate content using OpenAI"""

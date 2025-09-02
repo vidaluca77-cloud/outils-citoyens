@@ -89,6 +89,11 @@ export default function RootLayout({children}:{children:React.ReactNode}) {
                     console.log('SW registration failed: ', registrationError);
                   });
               }
+              
+              // Initialize Web Vitals
+              import('/src/lib/webVitals.js').then(({ initWebVitals }) => {
+                initWebVitals();
+              });
             `,
           }}
         />
