@@ -25,18 +25,14 @@ export function Button({
         // Loading state
         loading && 'cursor-wait',
         // Variants
-        {
-          'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm hover:shadow-md': variant === 'primary',
-          'bg-secondary text-secondary-foreground hover:bg-secondary/80': variant === 'secondary',
-          'bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground': variant === 'ghost',
-          'bg-destructive text-destructive-foreground hover:bg-destructive/90': variant === 'destructive',
-        },
+        variant === 'primary' && 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm hover:shadow-md',
+        variant === 'secondary' && 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+        variant === 'ghost' && 'bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground',
+        variant === 'destructive' && 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
         // Sizes
-        {
-          'px-3 py-1.5 text-sm': size === 'sm',
-          'px-4 py-2 text-sm': size === 'md',
-          'px-6 py-3 text-base': size === 'lg',
-        },
+        size === 'sm' && 'px-3 py-1.5 text-sm',
+        size === 'md' && 'px-4 py-2 text-sm',
+        size === 'lg' && 'px-6 py-3 text-base',
         className
       )}
       disabled={disabled || loading}

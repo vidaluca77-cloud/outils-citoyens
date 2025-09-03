@@ -19,11 +19,9 @@ export function Toast({ message, type = 'info', onClose, duration = 5000 }: Toas
   return (
     <div className={cn(
       'fixed top-4 right-4 max-w-md p-4 rounded-2xl shadow-lg z-50 transform transition-all duration-300',
-      {
-        'bg-green-500 text-white': type === 'success',
-        'bg-red-500 text-white': type === 'error',
-        'bg-blue-500 text-white': type === 'info',
-      }
+      type === 'success' && 'bg-green-500 text-white',
+      type === 'error' && 'bg-red-500 text-white',
+      type === 'info' && 'bg-blue-500 text-white'
     )}>
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
