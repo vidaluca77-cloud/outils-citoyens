@@ -23,9 +23,12 @@ rate_limit_store = defaultdict(list)
 
 app = FastAPI(title="Outils Citoyens API")
 
+# Configure CORS origins
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,https://outils-citoyens-three.vercel.app").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://outils-citoyens-three.vercel.app"],
+    allow_origins=allowed_origins,
     allow_methods=["*"],
     allow_headers=["*"],
     allow_credentials=True
@@ -54,7 +57,7 @@ class GenerateRequest(BaseModel):
     
     class Config:
         # Add validation
-        max_anystr_length = 10000  # Limit string length
+        str_max_length = 10000  # Limit string length (updated from max_anystr_length)
         validate_assignment = True
         
     def __init__(self, **data):
@@ -71,8 +74,8 @@ class GenerateRequest(BaseModel):
                 # Remove dangerous characters and limit length
                 value = value.strip()[:5000]  # Limit to 5000 chars
                 # Remove script tags and other dangerous content
-                value = re.sub(r'<script[^>]*>.*?</script>', '', value, flags=re.IGNORECASE | re.DOTALL)
-                value = re.sub(r'javascript:', '', value, flags=re.IGNORECASE)
+                value = re.sub(r'<script.*?>.*?</script>', '', value, flags=re.I|re.S)
+                value = re.sub(r'javascript:', '', value, flags=re.I)
                 sanitized[key] = value
             elif isinstance(value, dict):
                 sanitized[key] = self._sanitize_fields(value)
@@ -157,9 +160,11 @@ def calculate_price_per_sqm(fields: Dict[str, Any]) -> Optional[str]:
         loyer = fields.get('loyer')
         
         if surface and loyer:
-            # Extract numeric values
-            surface_num = float(re.sub(r'[^0-9.]', '', str(surface)))
-            loyer_num = float(re.sub(r'[^0-9.]', '', str(loyer)))
+            # Extract numeric values, handle French format (comma as decimal separator)
+            surface_str = str(surface).replace(',', '.').replace(' ', '')
+            loyer_str = str(loyer).replace(',', '.').replace(' ', '')
+            surface_num = float(re.sub(r'[^0-9.]', '', surface_str))
+            loyer_num = float(re.sub(r'[^0-9.]', '', loyer_str))
             
             if surface_num > 0:
                 price_per_sqm = loyer_num / surface_num
@@ -254,21 +259,20 @@ async def generate_document(request: GenerateRequest, req: Request):
         raise HTTPException(status_code=500, detail="Internal server error. Please try again later.")
 
 async def generate_with_openai(tool_id: str, fields: Dict[str, Any]) -> Output:
-    """Generate content using OpenAI"""
-    # Load system prompt and templates
-    system_prompt = load_system_prompt()
-    tool_template = load_tool_template(tool_id)
-    
-    # Create user prompt
-    user_prompt = create_user_prompt(tool_id, fields, tool_template)
-    
+    """Generate content using OpenAI with prompting.py integration"""
     try:
+        # Use prompting.py to build the prompt
+        prompt = prompting.build_prompt(tool_id, fields)
+        
+        # Build messages using prompting structure
+        messages = [
+            {"role": "system", "content": prompt["system"]},
+            {"role": "user", "content": f"{prompt['instructions']}\n\n=== CONTEXTE ===\n{prompt['context']}\n\n=== TEMPLATE ===\n{prompt['template']}\n\nIMPORTANT: Réponds uniquement en JSON valide avec les clés attendues (resume, lettre{{destinataire_bloc, objet, corps, pj[], signature}}, checklist[], mentions)."}
+        ]
+        
         response = client.chat.completions.create(
             model="gpt-4o",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
+            messages=messages,
             temperature=0.2,
             max_tokens=1200
         )
@@ -280,12 +284,51 @@ async def generate_with_openai(tool_id: str, fields: Dict[str, Any]) -> Output:
             result_data = json.loads(content)
             return Output(**result_data)
         except json.JSONDecodeError:
-            # Fallback if JSON parsing fails
-            return generate_mock_response(tool_id, fields)
+            # Retry once with error message
+            logger.warning("First JSON parse failed, retrying with corrected prompt")
+            try:
+                retry_response = client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt},
+                        {"role": "assistant", "content": content},
+                        {"role": "user", "content": "Le JSON précédent était invalide. Renvoie uniquement le JSON valide avec les clés attendues, sans aucun texte supplémentaire."}
+                    ],
+                    temperature=0.2,
+                    max_tokens=1200
+                )
+                retry_content = retry_response.choices[0].message.content
+                result_data = json.loads(retry_content)
+                return Output(**result_data)
+            except (json.JSONDecodeError, Exception) as retry_error:
+                logger.error(f"Retry JSON parsing also failed: {retry_error}")
+                # Fallback if retry also fails
+                return generate_mock_response(tool_id, fields)
             
     except Exception as e:
         logger.error(f"OpenAI API error: {str(e)}")
-        return generate_mock_response(tool_id, fields)
+        # Try fallback to original prompt system if prompting.py fails
+        try:
+            system_prompt = load_system_prompt()
+            tool_template = load_tool_template(tool_id)
+            user_prompt = create_user_prompt(tool_id, fields, tool_template)
+            
+            response = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt + "\n\nIMPORTANT: Réponds uniquement en JSON valide."}
+                ],
+                temperature=0.2,
+                max_tokens=1200
+            )
+            
+            content = response.choices[0].message.content
+            result_data = json.loads(content)
+            return Output(**result_data)
+        except Exception:
+            return generate_mock_response(tool_id, fields)
 
 def generate_mock_response(tool_id: str, fields: Dict[str, Any]) -> Output:
     """Generate mock response when OpenAI is not available"""

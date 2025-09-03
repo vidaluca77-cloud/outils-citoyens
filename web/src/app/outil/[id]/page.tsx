@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     
     const title = schema.title;
     const description = generateToolDescription(id);
-    const canonicalUrl = `https://outils-citoyens.vercel.app/outil/${id}`;
+    const canonicalUrl = `https://outils-citoyens-three.vercel.app/outil/${id}`;
     
     return {
       title,
@@ -66,7 +66,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
       title,
       description,
       alternates: {
-        canonical: `https://outils-citoyens.vercel.app/outil/${id}`,
+        canonical: `https://outils-citoyens-three.vercel.app/outil/${id}`,
       },
     };
   }
